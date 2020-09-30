@@ -1,12 +1,12 @@
 
 %% JOBS
-run.TF.run              = 1;
-run.TF.ROI              = {'brain'}; % can be 'sensor', 'brain', 'M1'
-run.TF.eval             = 0; 
-
+run.TF.run          = 1;
+run.TF.ROI          = {'parc'}; % can be 'sensor', 'parc', 'M1'
+run.TF.eval         = 0;
+run.TF.remove_parc  = 0;
 run.HMM.prep        = 0;
 run.HMM.run         = 0;
-run.HMM.eval        = 0; 
+run.HMM.eval        = 0;
 run.HMM.ST          = 0;
 
 run.TF
@@ -25,7 +25,7 @@ PATH_HMM = [ANAPATH 'HMM/'];
 PATH_DATA =  [ANAPATH 'data/'];
 PATH_SCRIPT = ['~/', 'scripts/HMM-gamma/'];
 
-files=dir([PATH_DATA 'fd_*.mat']);
+files=dir([PATH_DATA 'efd_*.mat']);
 
 %% PARAMS
 
@@ -48,163 +48,187 @@ if ~exist('subs', 'var'), subs = 1:length(files); end
 if run.TF.run
     files=dir([PATH_DATA 'efd_*.mat']);
     
-    for s = subs
-        if ~exist([PATH_TF  files(s).name], 'file')
-            source = fullfile(PATH_DATA,files(s).name);
-            copyfile(source,PATH_TF);
-        end
-        
-        D=spm_eeg_load([PATH_TF files(s).name]);
-        % orthogonalise
-        D=D.montage('switch',6);
-        D.save % switch to source space montage
-        dat_org = D(:,:,:);
-        parcels_to_be_del = [1 4 5 6 11 15 17 18 19 34 35 36 37 38 39 40 41 1+41 4+41 5+41 6+41 11+41 15+41 17+41 18+41 19+41 34+41 35+41 36+41 37+41 38+41 39+41 40+41 41+41];
-        dat_org(parcels_to_be_del,:,:) = [];
-        dat = reshape(dat_org,size(dat_org,1),[]);
-        dat = ROInets.remove_source_leakage(dat,'symmetric');
-        dat = reshape(dat,size(dat_org,1),size(dat_org,2),size(dat_org,3));
-        outfile = fullfile(D.path,D.fname);
-        Dnode = clone(montage(D,'switch',0),outfile,[size(dat,1),D.nsamples,D.ntrials]);
-        Dnode = chantype(Dnode,1:Dnode.nchannels,'VE');
-        Dnode(:,:,:)=dat;
-        D = Dnode;
-        D.save
-        
-        % TF
-        S = [];
-        S.D = D;
-        S.frequencies = freq;
-        S.timewin = [-Inf Inf];
-        S.phase = 0;
-        S.method = 'mtmconvol';
-        S.settings.taper = 'dpss';
-        S.settings.timeres = 400;
-        S.settings.timestep = 50;
-        S.settings.freqres = res;
-        D = spm_eeg_tf(S);
-        if ~keep, delete(S.D);  end
-        
-        % Crop
-        S = [];
-        S.D = D;
-        S.timewin = [-1800 1800];
-        D = spm_eeg_crop(S);
-        if ~keep, delete(S.D);  end
-        
-        % Average
-        S = [];
-        S.D = D;
-        S.robust.ks = 5;
-        S.robust.bycondition = false;
-        S.robust.savew = false;
-        S.robust.removebad = 0;
-        S.circularise = false;
-        D = spm_eeg_average(S);
-        if ~keep, delete(S.D);  end
-        
-        % Log
-        S = [];
-        S.D = D;
-        S.method = 'LogR';
-        S.timewin = [time_bl(1)*1000 time_bl(2)*1000];
-        S.pooledbaseline = 1;
-        D = spm_eeg_tf_rescale(S);
-        TF_avg(s,:,:)=squeeze(D(14,:,:,:)); %POI = 14; % Precentral after removal of some ROIs, otherwise POI=23;
-    end
-    save([PATH_TF 'TF_avg.mat'],'TF_avg','D','files');
-end
-
-%% EVAL TF
-if  run.TF.eval
-    load ([PATH_TF 'TF_avg.mat']);
-    % visulaisation (GA,SS)
-    meg_tms_tf_vis(TF_avg,D,freq,time_bl,files,PATH_ORIG,PATH_TF)
-    keyboard;
-    % peak frequency
-    [freq_peak,power]=meg_tms_tf_peak(TF_avg,D,freq,time_pre,time_peri,time_post,0,1,1);
-    % eval and corr 
-    meg_tms_tf_eval(BASEPATH,PATH_TF,files,freq_peak,power)
-end  
-  
-%% PREP HMM
-if run.HMM.prep  
-    mkdir(PATH_HMM);
-    cd(PATH_ORIG);files = dir(['efd*.mat']);
-    for s = subs
-        D = spm_eeg_load([PATH_ORIG files(s).name]);
-        D = D.montage('switch',6);% switch to source space montage
-        
-        %  orthogonalise
-        dat_org = D(:,:,:);
-        parcels_to_be_del = [1 4 5 6 11 15 17 18 19 34 35 36 37 38 39 40 41 1+41 4+41 5+41 6+41 11+41 15+41 17+41 18+41 19+41 34+41 35+41 36+41 37+41 38+41 39+41 40+41 41+41];
-        dat_org(parcels_to_be_del,:,:) = [];
-        dat = reshape(dat_org,size(dat_org,1),[]);
-        dat = ROInets.remove_source_leakage(dat,'symmetric');
-        dat = reshape(dat,size(dat_org,1),size(dat_org,2),size(dat_org,3));
-        POI = 14;%Precentral after removal of some ROIs, otherwise POI=23; %POI = 38; %right M1; %POI = 22;
-        fullsource{s} = dat;
-        PAC{s} = squeeze(dat(POI,:,:));
-        t{s} = D.time(1):1/D.fsample:D.time(end);
-        t{s} = round(t{s}*round_factor)/round_factor; % ensure that it's rounded properly for 'find' function
-        
-        % PC_1st: 1xlength(files) cell, whereby each cell contains a samples(currently 301)xtrials matrix
-        nsamples{s} = size(PAC{s},1);
-        ntrials{s} = size(PAC{s},2);
-        
-        %format for HMM
-        X{s}(:,1) = PAC{s}(:); % chnage format. Within each subject/file cell from matrix (smaplesx trials) to vector (concatenate all trials)
-        T{s} = repmat(nsamples{s},1,ntrials{s})';
-    end %subj
-    save([PATH_HMM 'PREP_HMM.mat'],'X','T','ntrials','t','round_factor','order','D');
-    
-% MAR check
-    X_all=cell2mat(X');
-    mkdir([PATH_HMM 'order_check/'])
-    cd([PATH_SCRIPT 'spectra_check/']);
-    for oo=1:20
-        hmmmar_spectra_check(X_all, oo, D.fsample);
-        print('-dpng',[PATH_HMM,'order_check/order_',sprintf('%03d.png',oo)]);
-        close(gcf)
-    end
-    hmmmar_spectra_check(X_all, order, D.fsample);
-end %if prep HMM
-
-%% RUN HMMs
-if run.HMM.run
-    for n=1:length(N_states)
-        for r=1:length(realization)
-            PATH_HMM_PREC = [PATH_HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
-            mkdir(PATH_HMM_PREC);
-            disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states, real ',num2str(realization(r)),' %%%']);
+    for rois = 1:numel(run.TF.ROI)
+        tmpPATH_TF = [PATH_TF, run.TF.ROI{rois}];
+        TF_avg = [];
+        for s = subs
             
-            load([PATH_HMM 'PREP_HMM.mat']);
-            
-            % define HMM params
-            load([PATH_SCRIPT 'meg_TMS_hmm_options.mat']);
-            options.K = N_states(n);
-            options.Fs = D.fsample;
-            options.order = order;
-            
-            % run HMM
-            clear hmm Gamma
-            [hmm{1},Gamma] = hmmmar(X,T,options);
-            
-            % get time vector
-            for s=1:length(T)
-                t{s}=D.time(1):1/D.fsample:D.time(end);
-                for o=1:ntrials{s}
-                    t_Gamma{s}{o}=t{s}(hmm{1}.train.order+1):1/D.fsample:t{s}(end);
+            D=spm_eeg_load([PATH_DATA files(s).name]);
+            if strcmp(run.TF.ROI, 'M1') || strcmp(run.TF.ROI, 'parc')
+                % orthogonalise
+                switch run.TF.ROI{rois}
+                    case 'parc'
+                        D=D.montage('switch',6);
+                        dat_org = D(:,:,:);
+                        if run.TF.remove_parc % or come up with a way to reduce the number of parcels to the rank of the data
+                            parcels_to_be_del = [1 4 5 6 11 15 17 18 19 34 35 36 37 38 39 40 41 1+41 4+41 5+41 6+41 11+41 15+41 17+41 18+41 19+41 34+41 35+41 36+41 37+41 38+41 39+41 40+41 41+41];
+                            dat_org(parcels_to_be_del,:,:) = [];
+                        end
+                    case 'M1'
+                        D = D.montage('switch', 5);
+                        p = parcellation('dk_full');
+                        M1idx = find(contains(p.labels, 'Left Precentral'));
+                        tmp = p.parcelflag;
+                        dat_org = D(find(tmp(:,M1idx)),:,:);
                 end
+                
+                dat = reshape(dat_org,size(dat_org,1),[]);
+                if size(dat,1)==rank(dat)
+                    dat = ROInets.remove_source_leakage(dat,'symmetric');
+                end
+                dat = reshape(dat,size(dat_org,1),size(dat_org,2),size(dat_org,3));
+                outfile = fullfile(tmpPATH_TF,D.fname);
+                Dnode = clone(montage(D,'switch',0),outfile,[size(dat,1),D.nsamples,D.ntrials]);
+                Dnode = chantype(Dnode,1:Dnode.nchannels,'VE');
+                Dnode(:,:,:)=dat;
+                D = Dnode;
+            else
+                D = D.montage('switch', 2);
             end
             
-            % estimate gammas & sepctrum
-            [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
-            [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
+            % TF
+            S = [];
+            S.D = D;
+            S.frequencies = freq;
+            S.timewin = [-Inf Inf];
+            S.phase = 0;
+            S.method = 'mtmconvol';
+            S.settings.taper = 'dpss';
+            S.settings.timeres = 400;
+            S.settings.timestep = 50;
+            S.settings.freqres = res;
+            D = spm_eeg_tf(S);
+            if ~keep, delete(S.D);  end
             
-            % save Vars
-            save([PATH_HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
-        end %real
-    end %states
+            % Crop
+            S = [];
+            S.D = D;
+            S.timewin = [-1800 1800];
+            D = spm_eeg_crop(S);
+            if ~keep, delete(S.D);  end
+            
+            % Average
+            S = [];
+            S.D = D;
+            S.robust.ks = 5;
+            S.robust.bycondition = false;
+            S.robust.savew = false;
+            S.robust.removebad = 0;
+            S.circularise = false;
+            D = spm_eeg_average(S);
+            if ~keep, delete(S.D);  end
+            
+            % Log
+            S = [];
+            S.D = D;
+            S.method = 'LogR';
+            S.timewin = [time_bl(1)*1000 time_bl(2)*1000];
+            S.pooledbaseline = 1;
+            D = spm_eeg_tf_rescale(S);
+            if strcmp(run.TF.ROI{rois}, 'parc')
+                TF_avg(s,:,:)=squeeze(D(14,:,:,:)); %POI = 14; % Precentral after removal of some ROIs, otherwise POI=23;
+            elseif strcmp(run.TF.ROI{rois}, 'sensor')
+                TF_avg(s,:,:,:)=D(:,:,:);
+            end
+            end
+        
+        if strcmp(run.TF.ROI{rois}, 'parc') || strcmp(run.TF.ROI{rois}, 'sensor')
+            tmp = D.fname;
+            save([tmpPATH_TF x(1:end-4) '_TF_avg.mat'],'TF_avg','D','files');
+        end
+    end
 end
-
+    
+    %% EVAL TF
+    if  run.TF.eval
+        load ([PATH_TF 'TF_avg.mat']);
+        % visulaisation (GA,SS)
+        meg_tms_tf_vis(TF_avg,D,freq,time_bl,files,PATH_ORIG,PATH_TF)
+        keyboard;
+        % peak frequency
+        [freq_peak,power]=meg_tms_tf_peak(TF_avg,D,freq,time_pre,time_peri,time_post,0,1,1);
+        % eval and corr
+        meg_tms_tf_eval(BASEPATH,PATH_TF,files,freq_peak,power)
+    end
+    
+    %% PREP HMM
+    if run.HMM.prep
+        mkdir(PATH_HMM);
+        cd(PATH_ORIG);files = dir(['efd*.mat']);
+        for s = subs
+            D = spm_eeg_load([PATH_ORIG files(s).name]);
+            D = D.montage('switch',6);% switch to source space montage
+            
+            %  orthogonalise
+            dat_org = D(:,:,:);
+            parcels_to_be_del = [1 4 5 6 11 15 17 18 19 34 35 36 37 38 39 40 41 1+41 4+41 5+41 6+41 11+41 15+41 17+41 18+41 19+41 34+41 35+41 36+41 37+41 38+41 39+41 40+41 41+41];
+            dat_org(parcels_to_be_del,:,:) = [];
+            dat = reshape(dat_org,size(dat_org,1),[]);
+            dat = ROInets.remove_source_leakage(dat,'symmetric');
+            dat = reshape(dat,size(dat_org,1),size(dat_org,2),size(dat_org,3));
+            POI = 14;%Precentral after removal of some ROIs, otherwise POI=23; %POI = 38; %right M1; %POI = 22;
+            fullsource{s} = dat;
+            PAC{s} = squeeze(dat(POI,:,:));
+            t{s} = D.time(1):1/D.fsample:D.time(end);
+            t{s} = round(t{s}*round_factor)/round_factor; % ensure that it's rounded properly for 'find' function
+            
+            % PC_1st: 1xlength(files) cell, whereby each cell contains a samples(currently 301)xtrials matrix
+            nsamples{s} = size(PAC{s},1);
+            ntrials{s} = size(PAC{s},2);
+            
+            %format for HMM
+            X{s}(:,1) = PAC{s}(:); % chnage format. Within each subject/file cell from matrix (smaplesx trials) to vector (concatenate all trials)
+            T{s} = repmat(nsamples{s},1,ntrials{s})';
+        end %subj
+        save([PATH_HMM 'PREP_HMM.mat'],'X','T','ntrials','t','round_factor','order','D');
+        
+        % MAR check
+        X_all=cell2mat(X');
+        mkdir([PATH_HMM 'order_check/'])
+        cd([PATH_SCRIPT 'spectra_check/']);
+        for oo=1:20
+            hmmmar_spectra_check(X_all, oo, D.fsample);
+            print('-dpng',[PATH_HMM,'order_check/order_',sprintf('%03d.png',oo)]);
+            close(gcf)
+        end
+        hmmmar_spectra_check(X_all, order, D.fsample);
+    end %if prep HMM
+    
+    %% RUN HMMs
+    if run.HMM.run
+        for n=1:length(N_states)
+            for r=1:length(realization)
+                PATH_HMM_PREC = [PATH_HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
+                mkdir(PATH_HMM_PREC);
+                disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states, real ',num2str(realization(r)),' %%%']);
+                
+                load([PATH_HMM 'PREP_HMM.mat']);
+                
+                % define HMM params
+                load([PATH_SCRIPT 'meg_TMS_hmm_options.mat']);
+                options.K = N_states(n);
+                options.Fs = D.fsample;
+                options.order = order;
+                
+                % run HMM
+                clear hmm Gamma
+                [hmm{1},Gamma] = hmmmar(X,T,options);
+                
+                % get time vector
+                for s=1:length(T)
+                    t{s}=D.time(1):1/D.fsample:D.time(end);
+                    for o=1:ntrials{s}
+                        t_Gamma{s}{o}=t{s}(hmm{1}.train.order+1):1/D.fsample:t{s}(end);
+                    end
+                end
+                
+                % estimate gammas & sepctrum
+                [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
+                [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
+                
+                % save Vars
+                save([PATH_HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
+            end %real
+        end %states
+    end
+    
