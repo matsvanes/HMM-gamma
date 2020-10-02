@@ -11,8 +11,8 @@ run.HMM.ST          = 0;
 
 run.TF
 run.HMM
-disp(['%%% Check if correct jobs are defined! %%%']);keyboard;
-
+disp(['%%% Check if correct jobs are defined! %%%']);%keyboard;
+subs=1:33;
 
 %% DEFINE PATHs
 BASEPATH = '/ohba/pi/mwoolrich/';
@@ -28,6 +28,9 @@ PATH_SCRIPT = ['~/', 'scripts/HMM-gamma/'];
 files=dir([PATH_DATA 'efd_*.mat']);
 
 %% PARAMS
+
+time_bl     = [-1 -0.5];
+
 
 % TF
 keep = 0;
@@ -49,12 +52,12 @@ if run.TF.run
     files=dir([PATH_DATA 'efd_*.mat']);
     
     for rois = 1:numel(run.TF.ROI)
-        tmpPATH_TF = [PATH_TF, run.TF.ROI{rois}];
+        tmpPATH_TF = [PATH_TF, run.TF.ROI{rois}, '/'];
         TF_avg = [];
         for s = subs
-            
-            D=spm_eeg_load([PATH_DATA files(s).name]);
-            if strcmp(run.TF.ROI, 'M1') || strcmp(run.TF.ROI, 'parc')
+            copyfile([PATH_DATA, files(s).name], tmpPATH_TF)
+            D=spm_eeg_load(fullfile(tmpPATH_TF, files(s).name));
+            if strcmp(run.TF.ROI{rois}, 'M1') || strcmp(run.TF.ROI{rois}, 'parc')
                 % orthogonalise
                 switch run.TF.ROI{rois}
                     case 'parc'
@@ -134,7 +137,7 @@ if run.TF.run
         
         if strcmp(run.TF.ROI{rois}, 'parc') || strcmp(run.TF.ROI{rois}, 'sensor')
             tmp = D.fname;
-            save([tmpPATH_TF x(1:end-4) '_TF_avg.mat'],'TF_avg','D','files');
+            save([tmpPATH_TF tmp(1:end-4) '_TF_avg.mat'],'TF_avg','D','files');
         end
     end
 end
