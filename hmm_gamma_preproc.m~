@@ -21,29 +21,29 @@ disp(['%%% Check if correct jobs are defined! %%%']);keyboard;
 
 %% DEFINE PATHs
 try
-  PATH_BASE = '/ohba/pi/mwoolrich/';
-  PATH_ORIG = [PATH_BASE, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/'];
-  PATH_BASE = [PATH_BASE, 'mvanes/'];
+  BASEPATH = '/ohba/pi/mwoolrich/';
+  RAWPATH = [BASEPATH, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/'];
+  BASEPATH = [BASEPATH, 'mvanes/'];
   islocal = 0;
 catch
-  PATH_BASE = '/Volumes/T5_OHBA/'; % if on a local desktop
+  BASEPATH = '/Volumes/T5_OHBA/'; % if on a local desktop
   warning('RAWPATH not accessible')
-  PATH_ORIG = [];
+  RAWPATH = [];
   islocal = 1;
 end
-PATH_ANALYSIS = [PATH_BASE, 'analysis/HMM-gamma/'];
+PATH_ANALYSIS = [BASEPATH, 'analysis/HMM-gamma/'];
 
-PATH_ORIGDATA = [PATH_ORIG, 'data/'];
-PATH_RT = [PATH_ORIG 'data/rt'];
+PATH_1 = [RAWPATH, 'data/'];
+PATH_RT = [RAWPATH 'data/rt'];
 PATH_TF = [PATH_ANALYSIS, 'TF/'];
 PATH_HMM = [PATH_ANALYSIS 'HMM/'];
 PATH_DATA =  [PATH_ANALYSIS 'data/'];
-PATH_SCRIPT = [PATH_BASE, 'scripts/HMM-gamma/'];
+SCRIPTPATH = [BASEPATH, 'scripts/HMM-gamma/'];
 
 if islocal
   files=dir([PATH_DATA 'fd_*.mat']);
 else
-  files=dir([PATH_ORIGDATA 'fd_*.mat']);
+  files=dir([PATH_1 'fd_*.mat']);
 end
 %% PARAMS
 % subjects
@@ -58,17 +58,17 @@ time_post   = [1 1.5];
 
 %% 1. DOWNSAMPLE & FILTER
 if run.preproc.filt
- files=dir([PATH_ORIGDATA, 'case*_tsss.mat']);
+ files=dir([PATH_1, 'case*_tsss.mat']);
     for s = subs
-        meg_tms_preproc01_df(PATH_ORIGDATA,files(s).name);
+        meg_tms_preproc01_df(PATH_1,files(s).name);
     end
 end
 
 %% 2. ICA
 if run.preproc.ica_run || run.preproc.ica_id
-    files=dir([PATH_ORIGDATA 'fd_*.mat']);
+    files=dir([PATH_1 'fd_*.mat']);
     for s = subs
-        D = spm_eeg_load([PATH_ORIGDATA files(s).name]);
+        D = spm_eeg_load([PATH_1 files(s).name]);
         if run.preproc.ica_run
             D = osl_detect_artefacts(D,'modalities',{'MEGMAG','MEGPLANAR'},'badchannels',true,'badtime',true,'dummy_epoch_tsize',1);
             D = osl_africa(D,'artefact_channels',{'EOG','ECG'},'used_maxfilter',true,'do_ica',true,'do_ident','auto','do_remove',true,'precompute_topos',true);
@@ -84,12 +84,12 @@ end
 
 %% 3. TRIGGER
 if run.preproc.trigger
-    files=dir([PATH_ORIGDATA 'fd_*.mat']);
+    files=dir([PATH_1 'fd_*.mat']);
     
     for s = subs
     load([PATH_RT 'emgf' files(s).name '/Timings.mat']);
         
-    D = spm_eeg_load([PATH_ORIGDATA files(s).name]);
+    D = spm_eeg_load([PATH_1 files(s).name]);
     Events = D.events;
     % remove old events (from previous iterations of this script)
     to_be_deleted=[];
@@ -122,24 +122,24 @@ end %if
 %% 4. COPY
 if run.preproc.copy
     % copy data
-    if isdir(PATH_ORIGDATA)
-        rmdir(PATH_ORIGDATA,'s');
+    if isdir(PATH_1)
+        rmdir(PATH_1,'s');
     end
-    mkdir(PATH_ORIGDATA);
+    mkdir(PATH_1);
     
-    files=dir([PATH_ORIGDATA 'fd_*.mat']);
+    files=dir([PATH_1 'fd_*.mat']);
     for s = subs
-        source = fullfile(PATH_ORIGDATA,files(s).name);
-        copyfile(source,PATH_ORIGDATA);
+        source = fullfile(PATH_1,files(s).name);
+        copyfile(source,PATH_1);
     end
 end
 
 %% 5. NORMALISE
 if run.preproc.normalise
-    files=dir([PATH_ORIGDATA 'fd_*.mat']);
+    files=dir([PATH_1 'fd_*.mat']);
     for s = subs
         S           = [];
-        S.D         = [PATH_ORIGDATA files(s).name];
+        S.D         = [PATH_1 files(s).name];
         D           = spm_eeg_load(S.D);
         S = [];
         S.D = D;
@@ -166,7 +166,7 @@ end
 % replace orig data with whitened data in D obj (problem: osl_change_spm_eeg_data does not work properly on data
 % with online montag (likely only used after beamforming)
 if run.preproc.whiten
-    files=dir([PATH_ORIGDATA 'fd_*.mat']);
+    files=dir([PATH_1 'fd_*.mat']);
     for s = subs
         D = spm_eeg_load([PATH_DATA, files(s).name]);
         

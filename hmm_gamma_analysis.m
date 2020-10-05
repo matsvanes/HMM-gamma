@@ -15,15 +15,24 @@ disp(['%%% Check if correct jobs are defined! %%%']);%keyboard;
 subs=[1:12 14:33];
 
 %% DEFINE PATHs
-BASEPATH = '/ohba/pi/mwoolrich/';
-PATH_ORIG = [BASEPATH, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/'];
-ANAPATH = [BASEPATH, 'mvanes/analysis/HMM-gamma/'];
+try
+  PATH_BASE = '/ohba/pi/mwoolrich/';
+  PATH_ORIG = [PATH_BASE, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/'];
+  PATH_BASE = [PATH_BASE, 'mvanes/'];
+  islocal = 0;
+catch
+  PATH_BASE = '/Volumes/T5_OHBA/'; % if on a local desktop
+  warning('RAWPATH not accessible')
+  PATH_ORIG = [];
+  islocal = 1;
+end
+PATH_ANALYSIS = [PATH_BASE, 'analysis/HMM-gamma/'];
 
-PATH_ORIG = [PATH_ORIG, 'data/'];
-PATH_TF = [ANAPATH, 'TF/'];
-PATH_HMM = [ANAPATH 'HMM/'];
-PATH_DATA =  [ANAPATH 'data/'];
-PATH_SCRIPT = ['~/', 'scripts/HMM-gamma/'];
+PATH_ORIGDATA = [PATH_ORIG, 'data/'];
+PATH_TF = [PATH_ANALYSIS, 'TF/'];
+PATH_HMM = [PATH_ANALYSIS 'HMM/'];
+PATH_DATA =  [PATH_ANALYSIS 'data/'];
+PATH_SCRIPT = [PATH_BASE, 'scripts/HMM-gamma/'];
 
 files=dir([PATH_DATA 'efd_*.mat']);
 
@@ -152,20 +161,20 @@ end
     if  run.TF.eval
         load ([PATH_TF 'TF_avg.mat']);
         % visulaisation (GA,SS)
-        meg_tms_tf_vis(TF_avg,D,freq,time_bl,files,PATH_ORIG,PATH_TF)
+        meg_tms_tf_vis(TF_avg,D,freq,time_bl,files,PATH_ORIGDATA,PATH_TF)
         keyboard;
         % peak frequency
         [freq_peak,power]=meg_tms_tf_peak(TF_avg,D,freq,time_pre,time_peri,time_post,0,1,1);
         % eval and corr
-        meg_tms_tf_eval(BASEPATH,PATH_TF,files,freq_peak,power)
+        meg_tms_tf_eval(PATH_BASE,PATH_TF,files,freq_peak,power)
     end
     
     %% PREP HMM
     if run.HMM.prep
         mkdir(PATH_HMM);
-        cd(PATH_ORIG);files = dir(['efd*.mat']);
+        cd(PATH_ORIGDATA);files = dir(['efd*.mat']);
         for s = subs
-            D = spm_eeg_load([PATH_ORIG files(s).name]);
+            D = spm_eeg_load([PATH_ORIGDATA files(s).name]);
             D = D.montage('switch',6);% switch to source space montage
             
             %  orthogonalise
