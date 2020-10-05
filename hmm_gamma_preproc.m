@@ -246,6 +246,7 @@ end
 if run.preproc.epoch
     for s = subs        
         D_cont = spm_eeg_load([PATH_DATA files(s).name]);
+        S = [];
         S.timewin = [time_epoch(1) time_epoch(2)];
         S.trialdef(1).conditionlabel = 'Move_on';
         S.trialdef(1).eventtype = 'Move_on';
