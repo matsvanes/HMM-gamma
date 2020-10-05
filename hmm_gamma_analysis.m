@@ -12,11 +12,11 @@ run.HMM.ST          = 0;
 run.TF
 run.HMM
 disp(['%%% Check if correct jobs are defined! %%%']);%keyboard;
-subs=1:33;
+subs=[1:12 14:33];
 
 %% DEFINE PATHs
 BASEPATH = '/ohba/pi/mwoolrich/';
-PATH_ORIG = [BASEPATH, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/data/'];
+PATH_ORIG = [BASEPATH, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/'];
 ANAPATH = [BASEPATH, 'mvanes/analysis/HMM-gamma/'];
 
 PATH_ORIG = [PATH_ORIG, 'data/'];
@@ -50,13 +50,16 @@ if ~exist('subs', 'var'), subs = 1:length(files); end
 %% RUN TF
 if run.TF.run
     files=dir([PATH_DATA 'efd_*.mat']);
-    
+
     for rois = 1:numel(run.TF.ROI)
         tmpPATH_TF = [PATH_TF, run.TF.ROI{rois}, '/'];
+        
         TF_avg = [];
         for s = subs
-            copyfile([PATH_DATA, files(s).name], tmpPATH_TF)
-            D=spm_eeg_load(fullfile(tmpPATH_TF, files(s).name));
+            S = [];
+            S.D=spm_eeg_load(fullfile(PATH_DATA, files(s).name));
+            S.outfile = fullfile(tmpPATH_TF, files(s).name);
+            D = spm_eeg_copy(S);
             if strcmp(run.TF.ROI{rois}, 'M1') || strcmp(run.TF.ROI{rois}, 'parc')
                 % orthogonalise
                 switch run.TF.ROI{rois}
@@ -129,15 +132,18 @@ if run.TF.run
             S.pooledbaseline = 1;
             D = spm_eeg_tf_rescale(S);
             if strcmp(run.TF.ROI{rois}, 'parc')
-                TF_avg(s,:,:)=squeeze(D(14,:,:,:)); %POI = 14; % Precentral after removal of some ROIs, otherwise POI=23;
+                if run.TF.remove_parc 
+                    TF_avg(s,:,:)=squeeze(D(14,:,:,:)); %POI = 14; % Precentral after removal of some ROIs, otherwise POI=23;
+                else
+                    TF_avg(s,:,:)=squeeze(D(23,:,:,:));
+                end
             elseif strcmp(run.TF.ROI{rois}, 'sensor')
                 TF_avg(s,:,:,:)=D(:,:,:);
             end
             end
         
         if strcmp(run.TF.ROI{rois}, 'parc') || strcmp(run.TF.ROI{rois}, 'sensor')
-            tmp = D.fname;
-            save([tmpPATH_TF tmp(1:end-4) '_TF_avg.mat'],'TF_avg','D','files');
+            save([tmpPATH_TF 'TF_avg.mat'],'TF_avg','files');
         end
     end
 end
