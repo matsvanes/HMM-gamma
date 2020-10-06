@@ -107,6 +107,7 @@ if run.TF.run
       else
         D = D.montage('switch', 2);
       end
+      D.save;
       
       % TF
       S = [];
