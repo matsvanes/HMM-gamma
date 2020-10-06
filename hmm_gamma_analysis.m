@@ -13,7 +13,6 @@ run.HMM.ST          = 0;
 run.TF
 run.HMM
 disp(['%%% Check if correct jobs are defined! %%%']);%keyboard;
-subs=[1:33];
 
 %% DEFINE PATHs
 if islocal
