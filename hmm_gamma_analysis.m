@@ -1,5 +1,3 @@
-islocal = 1;
-
 %% JOBS
 run.TF.run          = 1;
 run.TF.ROI          = {'parc'}; % can be 'sensor', 'parc', 'M1'
@@ -14,7 +12,8 @@ run.TF
 run.HMM
 disp(['%%% Check if correct jobs are defined! %%%']);%keyboard;
 
-%% DEFINE PATHs
+%% DEFINE 
+if exist('/ohba/pi/mwoolrich/', 'dir'), islocal=0; else, islocal=1; end
 if islocal
   PATH_BASE = '/Volumes/T5_OHBA/'; % if on a local desktop
   warning('RAWPATH not accessible')
