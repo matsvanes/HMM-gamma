@@ -1,18 +1,26 @@
 %% JOBS
-run.TF.run          = 1;
-run.TF.ROI          = {'parc'}; % can be 'sensor', 'parc', 'M1'
-run.TF.eval         = 0;
-run.TF.remove_parc  = 0;
-run.HMM.prep        = 0;
-run.HMM.run         = 0;
-run.HMM.eval        = 0;
-run.HMM.ST          = 0;
+if ~exist('run', 'var') || isempty(run)
+  run.TF.run          = 1;
+  run.TF.eval         = 0;
+  run.TF.remove_parc  = 0;
+  run.HMM.prep        = 0;
+  run.HMM.run         = 0;
+  run.HMM.eval        = 0;
+  run.HMM.ST          = 0;
+  if ~isfield(run.TF, 'ROI') || isempty(run.TF.ROI)
+    run.TF.ROI          = input('which ROIs do you want to analyze?{sensor, parc, M1'); % can be 'sensor', 'parc', 'M1'
+  end
+  run.TF
+  run.HMM
+  disp(['%%% Check if correct jobs are defined! %%%']);keyboard
+else
+  run.TF
+  run.HMM
+  disp(['%%% The following jobs are defined! %%%']);
+end
 
-run.TF
-run.HMM
-disp(['%%% Check if correct jobs are defined! %%%']);%keyboard;
 
-%% DEFINE 
+%% DEFINE
 if exist('/ohba/pi/mwoolrich/', 'dir'), islocal=0; else, islocal=1; end
 if islocal
   PATH_BASE = '/Volumes/T5_OHBA/'; % if on a local desktop
