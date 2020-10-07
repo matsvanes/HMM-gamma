@@ -80,14 +80,16 @@ if run.TF.run
         % orthogonalise
         switch run.TF.ROI{rois}
           case 'parc'
-            D=D.montage('switch',6);
+	    use_montage = 6;
+            D=D.montage('switch',use_montage);
             dat_org = D(:,:,:);
             if run.TF.remove_parc % or come up with a way to reduce the number of parcels to the rank of the data
               parcels_to_be_del = [1 4 5 6 11 15 17 18 19 34 35 36 37 38 39 40 41 1+41 4+41 5+41 6+41 11+41 15+41 17+41 18+41 19+41 34+41 35+41 36+41 37+41 38+41 39+41 40+41 41+41];
               dat_org(parcels_to_be_del,:,:) = [];
             end
           case 'M1'
-            D = D.montage('switch', 5);
+	    use_montage = 5;
+            D = D.montage('switch', use_montage);
             p = parcellation('dk_full');
             M1idx = find(contains(p.labels, 'Left Precentral'));
             tmp = p.parcelflag;
@@ -105,7 +107,8 @@ if run.TF.run
         Dnode(:,:,:)=dat;
         D = Dnode;
       else
-        D = D.montage('switch', 2);
+	use_montage = 2;
+        D = D.montage('switch', use_montage);
       end
       D.save;
       
@@ -121,6 +124,8 @@ if run.TF.run
       S.settings.timestep = 50;
       S.settings.freqres = res;
       D = spm_eeg_tf(S);
+      D = D.montage('switch', use_montage);
+      D.save
       if ~keep, delete(S.D);  end
       
       % Crop
@@ -128,6 +133,8 @@ if run.TF.run
       S.D = D;
       S.timewin = [-1800 1800];
       D = spm_eeg_crop(S);
+      D = D.switch('montage', use_montage);
+      D.save
       if ~keep, delete(S.D);  end
       
       % Average
@@ -139,6 +146,8 @@ if run.TF.run
       S.robust.removebad = 0;
       S.circularise = false;
       D = spm_eeg_average(S);
+      D = D.montage('switch', use_montage);
+      D.save
       if ~keep, delete(S.D);  end
       
       % Log
@@ -148,6 +157,8 @@ if run.TF.run
       S.timewin = [time_bl(1)*1000 time_bl(2)*1000];
       S.pooledbaseline = 1;
       D = spm_eeg_tf_rescale(S);
+      D = D.montage('switch', use_montage);
+      D.save
       if strcmp(run.TF.ROI{rois}, 'parc')
         if run.TF.remove_parc
           TF_avg(s,:,:)=squeeze(D(14,:,:,:)); %POI = 14; % Precentral after removal of some ROIs, otherwise POI=23;
