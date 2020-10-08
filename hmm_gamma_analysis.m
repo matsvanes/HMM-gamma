@@ -133,7 +133,7 @@ if run.TF.run
       S.D = D;
       S.timewin = [-1800 1800];
       D = spm_eeg_crop(S);
-      D = D.switch('montage', use_montage);
+      D = D.montage('switch', use_montage);
       D.save
       if ~keep, delete(S.D);  end
       
