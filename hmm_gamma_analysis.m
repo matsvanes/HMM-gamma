@@ -2,7 +2,7 @@
 if ~exist('run', 'var') || isempty(run)
   run.TF.run          = 1;
   run.TF.eval         = 0;
-  run.TF.remove_parc  = 0;
+  run.TF.remove_parc  = 1;
   run.HMM.prep        = 0;
   run.HMM.run         = 0;
   run.HMM.eval        = 0;
@@ -24,7 +24,7 @@ end
 if exist('/ohba/pi/mwoolrich/', 'dir'), islocal=0; else, islocal=1; end
 if islocal
   PATH_BASE = '/Volumes/T5_OHBA/'; % if on a local desktop
-  warning('RAWPATH not accessible')
+  warning('PATH_ORIG not accessible')
   PATH_ORIG = [];
   islocal = 1;
 else
@@ -34,11 +34,15 @@ else
   islocal = 0;
 end
 PATH_ANALYSIS = [PATH_BASE, 'analysis/HMM-gamma/'];
-
+if islocal
+  PATH_DATA = [PATH_BASE, 'data/HMM-gamma/'];
+else
+  PATH_DATA =  [PATH_ANALYSIS 'data/'];
+end
 PATH_ORIGDATA = [PATH_ORIG, 'data/'];
 PATH_TF = [PATH_ANALYSIS, 'TF/'];
 PATH_HMM = [PATH_ANALYSIS 'HMM/'];
-PATH_DATA =  [PATH_ANALYSIS 'data/'];
+
 PATH_SCRIPT = [PATH_BASE, 'scripts/HMM-gamma/'];
 
 files=dir([PATH_DATA 'efd_*.mat']);
@@ -74,7 +78,11 @@ if run.TF.run
     for s = subs
       S = [];
       S.D=spm_eeg_load(fullfile(PATH_DATA, files(s).name));
-      S.outfile = fullfile(tmpPATH_TF, files(s).name);
+      if strcmp(run.TF.ROI{rois}, 'parc') && run.TF.remove_parc
+        S.outfile = [tmpPATH_TF, 'sel_', files(s).name];
+      else
+        S.outfile = fullfile(tmpPATH_TF, files(s).name);
+      end
       D = spm_eeg_copy(S);
       if strcmp(run.TF.ROI{rois}, 'M1') || strcmp(run.TF.ROI{rois}, 'parc')
         % orthogonalise
@@ -107,8 +115,12 @@ if run.TF.run
         Dnode(:,:,:)=dat;
         D = Dnode;
       else
-	use_montage = 2;
+        use_montage = 2;
         D = D.montage('switch', use_montage);
+        dat = D(:,:,:);
+        Dtmp = D.montage('remove', 1:6);
+        Dtmp(:,:,:)=dat;
+        D=Dtmp;
       end
       D.save;
       
@@ -124,8 +136,6 @@ if run.TF.run
       S.settings.timestep = 50;
       S.settings.freqres = res;
       D = spm_eeg_tf(S);
-      D = D.montage('switch', use_montage);
-      D.save
       if ~keep, delete(S.D);  end
       
       % Crop
@@ -133,8 +143,6 @@ if run.TF.run
       S.D = D;
       S.timewin = [-1800 1800];
       D = spm_eeg_crop(S);
-      D = D.montage('switch', use_montage);
-      D.save
       if ~keep, delete(S.D);  end
       
       % Average
@@ -146,8 +154,6 @@ if run.TF.run
       S.robust.removebad = 0;
       S.circularise = false;
       D = spm_eeg_average(S);
-      D = D.montage('switch', use_montage);
-      D.save
       if ~keep, delete(S.D);  end
       
       % Log
@@ -157,8 +163,6 @@ if run.TF.run
       S.timewin = [time_bl(1)*1000 time_bl(2)*1000];
       S.pooledbaseline = 1;
       D = spm_eeg_tf_rescale(S);
-      D = D.montage('switch', use_montage);
-      D.save
       if strcmp(run.TF.ROI{rois}, 'parc')
         if run.TF.remove_parc
           TF_avg(s,:,:)=squeeze(D(14,:,:,:)); %POI = 14; % Precentral after removal of some ROIs, otherwise POI=23;
