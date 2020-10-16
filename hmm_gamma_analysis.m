@@ -34,11 +34,7 @@ else
   islocal = 0;
 end
 PATH_ANALYSIS = [PATH_BASE, 'analysis/HMM-gamma/'];
-if islocal
-  PATH_DATA = [PATH_BASE, 'data/HMM-gamma/'];
-else
-  PATH_DATA =  [PATH_ANALYSIS 'data/'];
-end
+PATH_DATA =  [PATH_ANALYSIS 'data/'];
 PATH_ORIGDATA = [PATH_ORIG, 'data/'];
 PATH_TF = [PATH_ANALYSIS, 'TF/'];
 PATH_HMM = [PATH_ANALYSIS 'HMM/'];
@@ -179,6 +175,7 @@ for rois = 1:numel(run.ROI)
   end
   hmmmar_spectra_check(X_all, order, D.fsample);
 end %if prep HMM
+end
 
 %% RUN HMMs
 if run.HMM.run
