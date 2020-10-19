@@ -96,20 +96,26 @@ if run.TF.run
       if ~keep, delete(S.D);  end
       
       % Average
-      S = [];
-      S.D = D;
-      S.robust.ks = 5;
-      S.robust.bycondition = false;
-      S.robust.savew = false;
-      S.robust.removebad = 0;
-      S.circularise = false;
-      D = spm_eeg_average(S);
-      if ~keep, delete(S.D);  end
+      if ~strcmp(run.ROI{rois}, 'M1')
+        S = [];
+        S.D = D;
+        S.robust.ks = 5;
+        S.robust.bycondition = false;
+        S.robust.savew = false;
+        S.robust.removebad = 0;
+        S.circularise = false;
+        D = spm_eeg_average(S);
+        if ~keep, delete(S.D);  end
+      end
       
       % Log
       S = [];
       S.D = D;
-      S.method = 'LogR';
+      if strcmp(run.ROI{rois}, 'M1')
+        S.method = 'Diff';
+      else
+        S.method = 'LogR';
+      end
       S.timewin = [time_bl(1)*1000 time_bl(2)*1000];
       S.pooledbaseline = 1;
       D = spm_eeg_tf_rescale(S);
