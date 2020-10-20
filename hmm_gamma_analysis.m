@@ -72,6 +72,7 @@ if run.TF.run
     
     TF_avg = [];
     for s = subs
+      s
       [D, POI] = hmm_gamma_preparedata(PATH_DATA, tmpPATH_TF, files(s).name, run.ROI{rois}, run.remove_parc);
       
       if strcmp(run.ROI{rois}, 'M1')
