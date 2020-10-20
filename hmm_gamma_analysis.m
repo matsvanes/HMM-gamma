@@ -73,7 +73,14 @@ if run.TF.run
     TF_avg = [];
     for s = subs
       [D, POI] = hmm_gamma_preparedata(PATH_DATA, tmpPATH_TF, files(s).name, run.ROI{rois}, run.remove_parc);
-            
+      
+      if ~strcmp(run.ROI{rois}, 'M1')
+        S = [];
+        S.D = D;
+        S.band = [60 90];
+        D = spm_eeg_filter(S);
+      end
+      
       % TF
       S = [];
       S.D = D;
