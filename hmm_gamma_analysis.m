@@ -74,7 +74,7 @@ if run.TF.run
     for s = subs
       [D, POI] = hmm_gamma_preparedata(PATH_DATA, tmpPATH_TF, files(s).name, run.ROI{rois}, run.remove_parc);
       
-      if ~strcmp(run.ROI{rois}, 'M1')
+      if strcmp(run.ROI{rois}, 'M1')
         S = [];
         S.D = D;
         S.band = [60 90];
