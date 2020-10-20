@@ -76,9 +76,16 @@ if run.TF.run
       [D, POI] = hmm_gamma_preparedata(PATH_DATA, tmpPATH_TF, files(s).name, run.ROI{rois}, run.remove_parc);
       
       if strcmp(run.ROI{rois}, 'M1')
+        % filtering needs to be done on MEG type channels..
+        Dtmp = clone(D,fullfile(D.path, D.fname),size(D));
+        Dtmp = chantype(Dtmp,1:Dtmp.nchannels,'MEG');
+        Dtmp(:,:,:)=D(:,:,:);
+        D=Dtmp;
+        
         S = [];
         S.D = D;
-        S.band = [60 90];
+        S.band = 'bandpass';
+        S.freq = [60 90];
         D = spm_eeg_filter(S);
       end
       
