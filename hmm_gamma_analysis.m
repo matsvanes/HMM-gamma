@@ -50,7 +50,9 @@ keep = 0;
 megtype = 'neuromag_sss';
 if ~exist('time_bl', 'var'), time_bl = [-1 -0.5]; end
 if ~exist('freq',    'var'), freq    = 5:1:145;   end
-if ~exist('res',     'var'), res     = 2.5;       end
+if ~exist('freqres', 'var'), freqres = 2.5;       end
+if ~exist('timres',  'var'), timres  = 400;       end
+
 sensor = 0;
 
 % HMM
@@ -94,9 +96,9 @@ if run.TF.run
       S.phase = 0;
       S.method = 'mtmconvol';
       S.settings.taper = 'dpss';
-      S.settings.timeres = 400;
+      S.settings.timeres = timres;
       S.settings.timestep = 50;
-      S.settings.freqres = res;
+      S.settings.freqres = freqres;
       D = spm_eeg_tf(S);
       if ~keep, delete(S.D);  end
       
