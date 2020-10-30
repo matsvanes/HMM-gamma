@@ -36,7 +36,7 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
       if remove_parc
         % dip_index_sorted is based on the group level T-stats in the [60
         % 90] Hz range and [0 0.5]s window.
-        load([tmpPATH_TF, 'dip_index_sorted.mat']);
+        load([target_path, 'dip_index_sorted.mat']);
         dip_index_sorted = sort(dip_index_sorted(1:datarank));
         dat = dat(dip_index_sorted,:);
       end

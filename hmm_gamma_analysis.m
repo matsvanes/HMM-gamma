@@ -92,7 +92,7 @@ if run.TF.run
       S = [];
       S.D = D;
       S.frequencies = freq;
-      S.timewin = [-Inf Inf];
+      S.timewin = 'all';
       S.phase = 0;
       S.method = 'mtmconvol';
       S.settings.taper = 'dpss';
