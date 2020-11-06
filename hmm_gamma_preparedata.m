@@ -1,10 +1,10 @@
-function [D, POI, dat] = hmm_gamma_preparedata(source_path, target_path, filename, roi, remove_parc)
+function [D, POI, dat] = hmm_gamma_preparedata(PATH, filename, roi, remove_parc)
 S = [];
-S.D=spm_eeg_load(fullfile(source_path, filename));
+S.D=spm_eeg_load(fullfile(PATH.DATA, filename));
 if (strcmp(roi, 'parc') || strcmp(roi, 'M1')) && remove_parc
-  S.outfile = [target_path, 'sel_', filename];
+  S.outfile = [PATH.TARGET, 'sel_', filename];
 else
-  S.outfile = fullfile(target_path, filename);
+  S.outfile = fullfile(PATH.TARGET, filename);
 end
 D = spm_eeg_copy(S);
 if strcmp(roi, 'M1') || strcmp(roi, 'parc')
@@ -36,9 +36,12 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
       if remove_parc
         % dip_index_sorted is based on the group level T-stats in the [60
         % 90] Hz range and [0 0.5]s window.
-        load([target_path, 'dip_index_sorted.mat']);
+        load([PATH.TARGET, 'dip_index_sorted.mat']);
         dip_index_sorted = sort(dip_index_sorted(1:datarank));
         dat = dat(dip_index_sorted,:);
+        POI = [];
+      else
+        POI = [];
       end
       warning('POI for M1 not yet supported: first the maximum gamma location should be selected')
       POI = [];
@@ -49,7 +52,7 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
     dat = ROInets.remove_source_leakage(dat,'symmetric');
   end
   dat = reshape(dat,size(dat,1),D.nsamples,D.ntrials);
-  outfile = fullfile(target_path,D.fname);
+  outfile = fullfile(PATH.TARGET,D.fname);
   Dnode = clone(montage(D,'switch',0),outfile,[size(dat,1),D.nsamples,D.ntrials]);
   Dnode = chantype(Dnode,1:Dnode.nchannels,'VE');
   Dnode(:,:,:)=dat;

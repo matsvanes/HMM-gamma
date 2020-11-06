@@ -23,25 +23,25 @@ end
 %% DEFINE
 if exist('/ohba/pi/mwoolrich/', 'dir'), islocal=0; else, islocal=1; end
 if islocal
-  PATH_BASE = '/Volumes/T5_OHBA/'; % if on a local desktop
-  PATH_ORIG = [];
+  PATH.BASE = '/Volumes/T5_OHBA/'; % if on a local desktop
+  PATH.ORIG = [];
   islocal   = 1;
-  warning('PATH_ORIG not accessible')
+  warning('PATH.ORIG not accessible')
 else
-  PATH_BASE = '/ohba/pi/mwoolrich/';
-  PATH_ORIG = [PATH_BASE, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/'];
-  PATH_BASE = [PATH_BASE, 'mvanes/'];
+  PATH.BASE = '/ohba/pi/mwoolrich/';
+  PATH.ORIG = [PATH.BASE, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/'];
+  PATH.BASE = [PATH.BASE, 'mvanes/'];
   islocal   = 0;
 end
-PATH_ANALYSIS = [PATH_BASE, 'analysis/HMM-gamma/'];
-PATH_DATA     = [PATH_ANALYSIS 'data/'];
-PATH_ORIGDATA = [PATH_ORIG, 'data/'];
-PATH_TF       = [PATH_ANALYSIS, 'TF/'];
-PATH_HMM      = [PATH_ANALYSIS 'HMM/'];
+PATH.ANALYSIS = [PATH.BASE, 'analysis/HMM-gamma/'];
+PATH.DATA     = [PATH.ANALYSIS 'data/'];
+PATH.ORIGDATA = [PATH.ORIG, 'data/'];
+PATH.TF       = [PATH.ANALYSIS, 'TF/'];
+PATH.HMM      = [PATH.ANALYSIS 'HMM/'];
 
-PATH_SCRIPT = [PATH_BASE, 'scripts/HMM-gamma/'];
+PATH.SCRIPT = [PATH.BASE, 'scripts/HMM-gamma/'];
 
-files=dir([PATH_DATA 'efd_*.mat']);
+files=dir([PATH.DATA 'efd_*.mat']);
 
 %% PARAMS
 
@@ -65,14 +65,14 @@ if ~exist('subs', 'var'), subs = 1:length(files); end
 
 %% RUN TF
 if run.TF.run
-  files=dir([PATH_DATA 'efd_*.mat']);
+  files=dir([PATH.DATA 'efd_*.mat']);
   
   for rois = 1:numel(run.ROI)
-    tmpPATH_TF = [PATH_TF, run.ROI{rois}, '/'];
+    PATH.TARGET = [PATH.TF, run.ROI{rois}, '/'];
     
     for s = subs
       s
-      [D, POI] = hmm_gamma_preparedata(PATH_DATA, tmpPATH_TF, files(s).name, run.ROI{rois}, run.remove_parc);
+      [D, POI] = hmm_gamma_preparedata(PATH.DATA, PATH.TARGET, files(s).name, run.ROI{rois}, run.remove_parc);
       
       if strcmp(run.ROI{rois}, 'M1')
         % filtering needs to be done on MEG type channels..
@@ -140,11 +140,11 @@ end
 
 %% PREP HMM
 if run.HMM.prep
-  files=dir([PATH_DATA 'efd_*.mat']);
+  files=dir([PATH.DATA 'efd_*.mat']);
   for rois = 1:numel(run.ROI)
-    tmpPATH_HMM = [PATH_HMM, run.ROI{rois}, '/'];
+    PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/'];
     for s = subs
-      [D, POI, dat] = hmm_gamma_preparedata(PATH_DATA, tmpPATH_TF, files(s).name, run.ROI{rois}, run.remove_parc);
+      [D, POI, dat] = hmm_gamma_preparedata(PATH.DATA,PATH.TARGET, files(s).name, run.ROI{rois}, run.remove_parc);
       
       PAC{s} = squeeze(dat(POI,:,:));
       t{s} = D.time(1):1/D.fsample:D.time(end);
@@ -158,15 +158,15 @@ if run.HMM.prep
       X{s}(:,1) = PAC{s}(:); % change format. Within each subject/file cell from matrix (smaplesx trials) to vector (concatenate all trials)
       T{s} = repmat(nsamples{s},1,ntrials{s})';
     end %subj
-    save([PATH_HMM 'PREP_HMM.mat'],'X','T','ntrials','t','round_factor','order','D');
+    save([PATH.HMM 'PREP_HMM.mat'],'X','T','ntrials','t','round_factor','order','D');
     
     % MAR check
     X_all=cell2mat(X');
-    mkdir([PATH_HMM 'order_check/'])
-    cd([PATH_SCRIPT 'spectra_check/']);
+    mkdir([PATH.HMM 'order_check/'])
+    cd([PATH.SCRIPT 'spectra_check/']);
     for oo=1:20
       hmmmar_spectra_check(X_all, oo, D.fsample);
-      print('-dpng',[PATH_HMM,'order_check/order_',sprintf('%03d.png',oo)]);
+      print('-dpng',[PATH.HMM,'order_check/order_',sprintf('%03d.png',oo)]);
       close(gcf)
     end
     hmmmar_spectra_check(X_all, order, D.fsample);
@@ -177,14 +177,14 @@ end
 if run.HMM.run
   for n=1:length(N_states)
     for r=1:length(realization)
-      PATH_HMM_PREC = [PATH_HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
-      mkdir(PATH_HMM_PREC);
+      PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
+      mkdir(PATH.HMM_PREC);
       disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states, real ',num2str(realization(r)),' %%%']);
       
-      load([PATH_HMM 'PREP_HMM.mat']);
+      load([PATH.HMM 'PREP_HMM.mat']);
       
       % define HMM params
-      load([PATH_SCRIPT 'meg_TMS_hmm_options.mat']);
+      load([PATH.SCRIPT 'meg_TMS_hmm_options.mat']);
       options.K = N_states(n);
       options.Fs = D.fsample;
       options.order = order;
@@ -206,7 +206,7 @@ if run.HMM.run
       [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
       
       % save Vars
-      save([PATH_HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
+      save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
     end %real
   end %states
 end
