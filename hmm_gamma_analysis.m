@@ -72,7 +72,7 @@ if run.TF.run
     
     for s = subs
       s
-      [D, POI] = hmm_gamma_preparedata(PATH.DATA, PATH.TARGET, files(s).name, run.ROI{rois}, run.remove_parc);
+      [D, POI] = hmm_gamma_preparedata(PATH, files(s).name, run.ROI{rois}, run.remove_parc);
       
       if strcmp(run.ROI{rois}, 'M1')
         % filtering needs to be done on MEG type channels..
@@ -144,7 +144,7 @@ if run.HMM.prep
   for rois = 1:numel(run.ROI)
     PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/'];
     for s = subs
-      [D, POI, dat] = hmm_gamma_preparedata(PATH.DATA,PATH.TARGET, files(s).name, run.ROI{rois}, run.remove_parc);
+      [D, POI, dat] = hmm_gamma_preparedata(PATH, files(s).name, run.ROI{rois}, run.remove_parc);
       
       PAC{s} = squeeze(dat(POI,:,:));
       t{s} = D.time(1):1/D.fsample:D.time(end);
