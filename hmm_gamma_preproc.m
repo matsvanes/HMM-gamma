@@ -10,22 +10,25 @@ run.preproc.trigger     = 0;
 run.preproc.copy        = 0;
 run.preproc.normalise   = 1;
 run.preproc.whiten      = 1;
+run.preproc.bpfilt      = 0;
 run.preproc.coreg       = 1; 
 run.preproc.check_coreg = 0;
 run.preproc.parcel      = 0;
 run.preproc.beamform    = 0;
 run.preproc.epoch       = 0;
 
+
+run.keep = 0;
 run.preproc
-disp(['%%% Check if correct jobs are defined! %%%']);keyboard;
+disp(['%%% Check if correct jobs are defined! %%%'])
 
 %% DEFINE PATHs
-try
+if isdir('/ohba/pi/mwoolrich/')
   PATH_BASE = '/ohba/pi/mwoolrich/';
   PATH_ORIG = [PATH_BASE, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/'];
   PATH_BASE = [PATH_BASE, 'mvanes/'];
   islocal = 0;
-catch
+else
   PATH_BASE = '/Volumes/T5_OHBA/'; % if on a local desktop
   warning('RAWPATH not accessible')
   PATH_ORIG = [];
@@ -45,6 +48,9 @@ if islocal
 else
   files=dir([PATH_ORIGDATA 'fd_*.mat']);
 end
+
+subinfo;
+prefix = 'fd';
 %% PARAMS
 % subjects
 if ~exist('subs', 'var'), subs = 1:length(files); end
@@ -121,7 +127,8 @@ end %if
 
 %% 4. COPY
 if run.preproc.copy
-    % copy data
+  %{ 
+  % copy data
     if isdir(PATH_ORIGDATA)
         rmdir(PATH_ORIGDATA,'s');
     end
@@ -133,21 +140,41 @@ if run.preproc.copy
         copyfile(source,PATH_ORIGDATA);
     end
 end
+  %}
+  for     s = subs
+    files=dir([PATH_ORIGDATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+    S           = [];
+    S.D         = [PATH_ORIGDATA files.name];
+    D           = spm_eeg_load(S.D);
+    D = data_to_spm_object(D, D.montage('switch',2), fullfile(PATH_DATA,D.fname));
+    D.save
+  end
+end
+
+%% OPTIONAL - FILTER
+if run.preproc.bpfilt
+  for s=subs
+    files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+    S = [];
+    S.D = [PATH_DATA files.name];
+    S.band = 'bandpass';
+    S.freq = [60 90];
+    S.prefix = 'f';
+    D = spm_eeg_filter(S);
+    D.save;
+    if ~keep, delete(S.D);  end
+  end
+  prefix = ['f' prefix];
+end
 
 %% 5. NORMALISE
 if run.preproc.normalise
-    files=dir([PATH_ORIGDATA 'fd_*.mat']);
-    for s = subs
-        S           = [];
-        S.D         = [PATH_ORIGDATA files(s).name];
-        D           = spm_eeg_load(S.D);
-        S = [];
-        S.D = D;
-        S.outfile = [PATH_DATA, files(s).name];
-        D = spm_eeg_copy(S);
-        D           = D.montage('switch',2);
-        D.save
-        
+  
+  for s = subs
+      files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+    
+    D = spm_eeg_load([PATH_DATA files.name]);
+    
         S               = [];
         S.D             = D;
         S.modalities    = {'MEGMAG','MEGPLANAR'};
@@ -158,6 +185,19 @@ if run.preproc.normalise
         S.force_pca_dim = 0;
         S.normalise_method = 'min_eig';
         D = normalise_sensor_data(S);
+        tmp1 = D.chantype;
+        tmp2 = D.chanlabels;
+        tmp3 = D.montage('getmontage',1);
+        
+
+        D = data_to_spm_object(D.montage('switch',0), D.montage('switch',1), fullfile(PATH_DATA,D.fname));
+        chanunits = {tmp3.channels(:).units};
+        sensors = D.sensors('MEG');
+        sensors.chanunit(:) = {'T/mm'};% = chanunits; %
+        D = D.sensors('MEG',sensors);
+        D=units(D,1:306, 'T/mm');
+        D = chantype(D,1:D.nchannels,tmp1);
+        D = chanlabels(D,1:D.nchannels,tmp2);
         D.save
     end
 end
@@ -166,43 +206,37 @@ end
 % replace orig data with whitened data in D obj (problem: osl_change_spm_eeg_data does not work properly on data
 % with online montag (likely only used after beamforming)
 if run.preproc.whiten
-    files=dir([PATH_ORIGDATA 'fd_*.mat']);
     for s = subs
-        D = spm_eeg_load([PATH_DATA, files(s).name]);
+    files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+      D = spm_eeg_load([PATH_DATA, files.name]);
         
         % Copy data file from montag 0 containing original sensor info
         S_new           = [];
-        S_new.outfile   = [PATH_DATA, files(s).name];
-        S_new.D         = D.montage('switch',0);
+        S_new.outfile   = [PATH_DATA, 'w',files.name];
+        S_new.D         = D;
         D_new           = spm_eeg_copy(S_new);
                 
         % do whitening
-        D = D.montage('switch',3);
         ind_chan = D_new.indchantype('MEGANY');
-        data = D(ind_chan,:,:);
+        data = D_new(ind_chan,:,:);
         data = [diff(data,1,2),zeros(length(ind_chan),1)]./(1/D.fsample);        
         
         % put new data in D obj.
         D_new(ind_chan,:,:) = data;
-        
-        % Adjust chan units in copied file to refleci normalisation etc.(this might do nothing - warning that it assumes unites of T/mm)
-        temp = D_new.montage('getmontage',3);
-        chanunits = {temp.channels(:).units};
-        
-        sensors = D_new.sensors('MEG');
-        sensors.chanunit = chanunits;
-        D_new = D_new.sensors('MEG',sensors);
-        
+               
         % Write chages to disk
         D_new.save;
     end
+    prefix = ['w', prefix];
 end
+
 
 %% 7. COREGISTRATION
 if run.preproc.coreg
     for s = subs
-        D = spm_eeg_load([PATH_DATA files(s).name]);
-        D = D.montage('switch',3);
+      files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+        D = spm_eeg_load([PATH_DATA files.name]);
+
         % Coregistration (see comment in Quinn Frontiers script regarding use headshape, but also consider that here a template is used)
         coreg_set = struct;
         coreg_set.D = D;
@@ -221,11 +255,13 @@ if run.preproc.coreg
     end
 end
 
+
 %% 8. BEAMFORM
 if run.preproc.parcel
     for s = subs
+      files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
         S = [];
-        S.D = [PATH_DATA files(s).name];
+        S.D = [PATH_DATA files.name];
         p = parcellation('dk_full'); % alternative ('fmri_d100_parcellation_with_PCC_tighterMay15_v2_8mm')
         D = osl_inverse_model(S.D,p.template_coordinates, 'pca_order',55);
     end
@@ -236,8 +272,9 @@ end
 % vertex with maximum gamma increase (subject specific).
 if run.preproc.beamform
     for s = subs
-        D = spm_eeg_load([PATH_DATA files(s).name]);
-        D = D.montage('switch',5);
+      files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+        D = spm_eeg_load([PATH_DATA files.name]);
+        D = D.montage('switch',2);
         D = ROInets.get_node_tcs(D,p.parcelflag,'spatialBasis','Giles');
         % 21 - Left postcentral S1, 23 - Left precentral M1
         D.save
@@ -257,7 +294,8 @@ end
 %% 11. EPOCH
 if run.preproc.epoch
     for s = subs        
-        D_cont = spm_eeg_load([PATH_DATA files(s).name]);
+        files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+        D_cont = spm_eeg_load([PATH_DATA, files.name]);
         S = [];
         S.timewin = [time_epoch(1) time_epoch(2)];
         S.trialdef(1).conditionlabel = 'Move_on';
@@ -278,6 +316,7 @@ if run.preproc.epoch
         S2.D = D_cont;
         S2.prefix = 'e';
         D = osl_epoch(S2);
+        if ~keep, delete(S2.D);  end
     end
 end
 
