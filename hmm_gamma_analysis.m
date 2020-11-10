@@ -1,6 +1,8 @@
 %% JOBS
 if ~exist('run', 'var') || isempty(run)
-  run.remove_parc     = 1;
+  run.preproc.bpfilt  = 0;
+  run.preproc.whiten  = 0;
+  run.remove_parc     = 0;
   run.TF.run          = 1;
   run.TF.eval         = 0;
   run.HMM.prep        = 0;
@@ -38,11 +40,16 @@ PATH.DATA     = [PATH.ANALYSIS 'data/'];
 PATH.ORIGDATA = [PATH.ORIG, 'data/'];
 PATH.TF       = [PATH.ANALYSIS, 'TF/'];
 PATH.HMM      = [PATH.ANALYSIS 'HMM/'];
+PATH.DIPOLE   = [PATH.TF, 'M1/', 'peaks_60_90Hz/'];
 
 PATH.SCRIPT = [PATH.BASE, 'scripts/HMM-gamma/'];
 
 files=dir([PATH.DATA 'efd_*.mat']);
-
+subinfo;
+prefix = 'fd';
+if run.preproc.bpfilt,  prefix = [prefix, 'f']; end
+if run.preproc.whiten,  prefix = [prefix, 'w']; end
+prefix = [prefix, 'e'];
 %% PARAMS
 
 % TF
@@ -65,28 +72,16 @@ if ~exist('subs', 'var'), subs = 1:length(files); end
 
 %% RUN TF
 if run.TF.run
-  files=dir([PATH.DATA 'efd_*.mat']);
+  
   
   for rois = 1:numel(run.ROI)
+    
     PATH.TARGET = [PATH.TF, run.ROI{rois}, '/'];
     
     for s = subs
       s
-      [D, POI] = hmm_gamma_preparedata(PATH, files(s).name, run.ROI{rois}, run.remove_parc);
-      
-      if strcmp(run.ROI{rois}, 'M1')
-        % filtering needs to be done on MEG type channels..
-        Dtmp = clone(D,fullfile(D.path, D.fname),size(D));
-        Dtmp = chantype(Dtmp,1:Dtmp.nchannels,'MEG');
-        Dtmp(:,:,:)=D(:,:,:);
-        D=Dtmp;
-        
-        S = [];
-        S.D = D;
-        S.band = 'bandpass';
-        S.freq = [60 90];
-        D = spm_eeg_filter(S);
-      end
+      files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+      [D, POI] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc);
       
       % TF
       S = [];
@@ -140,11 +135,12 @@ end
 
 %% PREP HMM
 if run.HMM.prep
-  files=dir([PATH.DATA 'efd_*.mat']);
+  
   for rois = 1:numel(run.ROI)
     PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/'];
     for s = subs
-      [D, POI, dat] = hmm_gamma_preparedata(PATH, files(s).name, run.ROI{rois}, run.remove_parc);
+      files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+      [D, POI, dat] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc);
       
       PAC{s} = squeeze(dat(POI,:,:));
       t{s} = D.time(1):1/D.fsample:D.time(end);
@@ -158,7 +154,12 @@ if run.HMM.prep
       X{s}(:,1) = PAC{s}(:); % change format. Within each subject/file cell from matrix (smaplesx trials) to vector (concatenate all trials)
       T{s} = repmat(nsamples{s},1,ntrials{s})';
     end %subj
-    save([PATH.HMM 'PREP_HMM.mat'],'X','T','ntrials','t','round_factor','order','D');
+    if run.remove_parc
+      fname = 'PREP_HMM_sel.mat';
+    else
+      fname = 'PREP_HMM.mat';
+    end
+    save([PATH.HMM fname],'X','T','ntrials','t','round_factor','order','D');
     
     % MAR check
     X_all=cell2mat(X');

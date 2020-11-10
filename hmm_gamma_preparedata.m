@@ -11,7 +11,7 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
   % orthogonalise
   switch roi
     case 'parc'
-      use_montage = 6;
+      use_montage = 3;
       D=D.montage('switch',use_montage);
       dat_org = D(:,:,:);
       dat = reshape(dat_org,size(dat_org,1),[]);
@@ -24,7 +24,7 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
         POI = 23;
       end
     case 'M1'
-      use_montage = 5;
+      use_montage = 2;
       D = D.montage('switch', use_montage);
       p = parcellation('dk_full');
       M1idx = find(contains(p.labels, 'Left Precentral'));
@@ -33,18 +33,24 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
       dat_org = D(dip_index,:,:);
       dat = reshape(dat_org,size(dat_org,1),[]);
       datarank = rank(dat);
+      try
+      fname = extractBetween(filename, 'case_', '_go');
       if remove_parc
         % dip_index_sorted is based on the group level T-stats in the [60
         % 90] Hz range and [0 0.5]s window.
-        load([PATH.TARGET, 'dip_index_sorted.mat']);
+        load([PATH.TF, 'M1/', 'dip_index_sorted.mat']);
         dip_index_sorted = sort(dip_index_sorted(1:datarank));
         dat = dat(dip_index_sorted,:);
-        POI = [];
+        fname = dir([PATH.DIPOLE, 'case_', sprintf('%s_sel', fname{1}), '.mat']);
       else
+        fname = dir([PATH.DIPOLE, 'case_', sprintf('%s', fname{1}), '.mat']);
+      end      
+      dipole = load([PATH.DIPOLE, fname.name]);
+      POI = dipole.voxel;
+      catch
+        warning('maximum dipole unknown')
         POI = [];
       end
-      warning('POI for M1 not yet supported: first the maximum gamma location should be selected')
-      POI = [];
   end
   % remove source leakage. Only possible if certain parcels/dipoles were
   % removed.
@@ -58,7 +64,7 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
   Dnode(:,:,:)=dat;
   D = Dnode;
 else
-  use_montage = 2;
+  use_montage = 0;
   D = D.montage('switch', use_montage);
   dat = D(:,:,:);
   Dtmp = D.montage('remove', 1:6);
