@@ -14,9 +14,9 @@ if ~exist('run','var') || isempty(run)
   run.preproc.bpfilt      = 0;
   run.preproc.coreg       = 1;
   run.preproc.check_coreg = 0;
-  run.preproc.parcel      = 0;
-  run.preproc.beamform    = 0;
-  run.preproc.epoch       = 0;
+  run.preproc.parcel      = 1;
+  run.preproc.beamform    = 1;
+  run.preproc.epoch       = 1;
   
   
   run.keep = 0;
@@ -164,7 +164,7 @@ if run.preproc.bpfilt
     S.prefix = 'f';
     D = spm_eeg_filter(S);
     D.save;
-    if ~keep, delete(S.D);  end
+    if ~run.keep, delete(S.D);  end
   end
   prefix = ['f' prefix];
 end
@@ -318,7 +318,7 @@ if run.preproc.epoch
     S2.D = D_cont;
     S2.prefix = 'e';
     D = osl_epoch(S2);
-    if ~keep, delete(S2.D);  end
+    if ~run.keep, delete(S2.D);  end
   end
 end
 
