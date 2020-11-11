@@ -47,9 +47,9 @@ PATH.SCRIPT = [PATH.BASE, 'scripts/HMM-gamma/'];
 files=dir([PATH.DATA 'efd_*.mat']);
 subinfo;
 prefix = 'fd';
-if run.preproc.bpfilt,  prefix = [prefix, 'f']; end
-if run.preproc.whiten,  prefix = [prefix, 'w']; end
-prefix = [prefix, 'e'];
+if run.preproc.bpfilt,  prefix = ['f', prefix]; end
+if run.preproc.whiten,  prefix = ['w', prefix]; end
+prefix = ['e', prefix];
 %% PARAMS
 
 % TF
