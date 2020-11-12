@@ -258,7 +258,8 @@ end
 
 
 %% 8. BEAMFORM
-if run.preproc.parcel
+if run.preproc.beamform
+
   for s = subs
     files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
     S = [];
@@ -271,7 +272,7 @@ end
 %% 9. PARCELATION
 % NOTE: now it takes the PC from each parcel. Instead, potentially use the
 % vertex with maximum gamma increase (subject specific).
-if run.preproc.beamform
+if run.preproc.parcel
   for s = subs
     files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
     D = spm_eeg_load([PATH_DATA files.name]);
