@@ -10,8 +10,8 @@ if ~exist('run','var') || isempty(run)
   
   run.preproc.copy        = 1;
   run.preproc.normalise   = 1;
-  run.preproc.whiten      = 1;
-  run.preproc.bpfilt      = 0;
+  run.preproc.whiten      = 0;
+  run.preproc.bpfilt      = 1;
   run.preproc.coreg       = 1;
   run.preproc.check_coreg = 0;
   run.preproc.parcel      = 1;
@@ -29,17 +29,17 @@ if isdir('/ohba/pi/mwoolrich/')
   PATH_BASE = '/ohba/pi/mwoolrich/';
   PATH_ORIG = [PATH_BASE, 'datasets/CZ_Gamma/MEG_Gamma_HandOver/'];
   PATH_BASE = [PATH_BASE, 'mvanes/'];
+  PATH_ORIGDATA = [PATH_ORIG, 'data/'];
   islocal = 0;
 else
   PATH_BASE = '/Volumes/T5_OHBA/'; % if on a local desktop
   warning('RAWPATH not accessible')
-  PATH_ORIG = [];
+  PATH_ORIGDATA = [PATH_BASE, 'data/HMM-gamma/'];
   islocal = 1;
 end
 PATH_ANALYSIS = [PATH_BASE, 'analysis/HMM-gamma/'];
 
-PATH_ORIGDATA = [PATH_ORIG, 'data/'];
-PATH_RT = [PATH_ORIG 'data/rt'];
+PATH_RT = [PATH_ORIGDATA 'rt/'];
 PATH_TF = [PATH_ANALYSIS, 'TF/'];
 PATH_HMM = [PATH_ANALYSIS 'HMM/'];
 PATH_DATA =  [PATH_ANALYSIS 'data/'];
@@ -52,7 +52,7 @@ else
 end
 
 subinfo;
-prefix = 'fd';
+if ~exist('prefix', 'var'), prefix = 'fd'; end
 %% PARAMS
 % subjects
 if ~exist('subs', 'var'), subs = 1:length(files); end
@@ -164,9 +164,8 @@ if run.preproc.bpfilt
     S.prefix = 'f';
     D = spm_eeg_filter(S);
     D.save;
-    if ~run.keep, delete(S.D);  end
+    prefix = ['f' prefix];
   end
-  prefix = ['f' prefix];
 end
 
 %% 5. NORMALISE
