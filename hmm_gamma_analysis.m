@@ -80,7 +80,7 @@ if run.TF.run
     
     for s = subs
       s
-      files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+      files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
       [D, POI] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc);
       
       % TF
@@ -139,7 +139,7 @@ if run.HMM.prep
   for rois = 1:numel(run.ROI)
     PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/'];
     for s = subs
-      files=dir([PATH_DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
+      files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
       [D, POI, dat] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc);
       
       PAC{s} = squeeze(dat(POI,:,:));
