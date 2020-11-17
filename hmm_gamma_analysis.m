@@ -40,10 +40,9 @@ PATH.DATA     = [PATH.ANALYSIS 'data/'];
 PATH.ORIGDATA = [PATH.ORIG, 'data/'];
 PATH.TF       = [PATH.ANALYSIS, 'TF/'];
 PATH.HMM      = [PATH.ANALYSIS 'HMM/'];
-PATH.DIPOLE   = [PATH.TF, 'M1/', 'peaks_60_90Hz/'];
 
 PATH.SCRIPT = [PATH.BASE, 'scripts/HMM-gamma/'];
- if ~exist('userdir', 'var'), userdir = []; else, userdir = [userdir, '/']; end
+ if ~exist('userdir', 'var'), userdir = []; else, if ~strcmp(userdir(end),'/'), userdir = [userdir, '/']; end, end
 
 files=dir([PATH.DATA 'efd_*.mat']);
 subinfo;
@@ -51,6 +50,7 @@ prefix = 'fd';
 if run.preproc.bpfilt,  prefix = ['f', prefix]; end
 if run.preproc.whiten,  prefix = ['w', prefix]; end
 prefix = ['e', prefix];
+p = parcellation('dk_full');
 %% PARAMS
 
 % TF
@@ -78,11 +78,12 @@ if run.TF.run
   for rois = 1:numel(run.ROI)
     
     PATH.TARGET = [PATH.TF, run.ROI{rois}, '/', userdir];
-    
+    PATH.DIPOLE   = [PATH.TARGET, 'peaks_60_90Hz/'];
+    dipole_sorted = load([PATH.TARGET, prefix, '_dip_index_sorted.mat']);
     for s = subs
       s
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
-      [D, POI] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc);
+      [D, POI] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_sorted);
       
       % TF
       S = [];

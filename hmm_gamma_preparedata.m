@@ -1,4 +1,4 @@
-function [D, POI, dat] = hmm_gamma_preparedata(PATH, filename, roi, remove_parc)
+function [D, POI, dat] = hmm_gamma_preparedata(PATH, filename, roi, remove_parc, p, dipole_sort)
 S = [];
 S.D=spm_eeg_load(fullfile(PATH.DATA, filename));
 if (strcmp(roi, 'parc') || strcmp(roi, 'M1')) && remove_parc
@@ -26,7 +26,6 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
     case 'M1'
       use_montage = 2;
       D = D.montage('switch', use_montage);
-      p = parcellation('dk_full');
       M1idx = find(contains(p.labels, 'Left Precentral'));
       dip_index = p.parcelflag;
       dip_index = find(dip_index(:,M1idx)); % find the dipole locations in the M1 parcel
@@ -35,13 +34,13 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
       datarank = rank(dat);
       try
       fname = extractBetween(filename, 'case_', '_go');
+      prefix = extractBefore(filename, 'case');
       if remove_parc
         % dip_index_sorted is based on the group level T-stats in the [60
         % 90] Hz range and [0 0.5]s window.
-        load([PATH.TF, 'M1/', 'dip_index_sorted.mat']);
-        dip_index_sorted = sort(dip_index_sorted(1:datarank));
+        dip_index_sorted = sort(dipole_sort.dip_index_sorted(1:datarank));
         dat = dat(dip_index_sorted,:);
-        fname = dir([PATH.DIPOLE, 'case_', sprintf('%s_sel', fname{1}), '.mat']);
+        fname = dir([PATH.DIPOLE, prefix, 'case_', sprintf('%s_sel', fname{1}), '.mat']);
       else
         fname = dir([PATH.DIPOLE, 'case_', sprintf('%s', fname{1}), '.mat']);
       end      
