@@ -1,6 +1,6 @@
 %% JOBS
 if ~exist('run', 'var') || isempty(run)
-  run.preproc.bpfilt  = 0;
+  run.preproc.bpfilt  = 1;
   run.preproc.whiten  = 0;
   run.remove_parc     = 0;
   run.TF.run          = 1;
@@ -43,6 +43,7 @@ PATH.HMM      = [PATH.ANALYSIS 'HMM/'];
 PATH.DIPOLE   = [PATH.TF, 'M1/', 'peaks_60_90Hz/'];
 
 PATH.SCRIPT = [PATH.BASE, 'scripts/HMM-gamma/'];
+ if ~exist('userdir', 'var'), userdir = []; else, userdir = [userdir, '/']; end
 
 files=dir([PATH.DATA 'efd_*.mat']);
 subinfo;
@@ -76,7 +77,7 @@ if run.TF.run
   
   for rois = 1:numel(run.ROI)
     
-    PATH.TARGET = [PATH.TF, run.ROI{rois}, '/'];
+    PATH.TARGET = [PATH.TF, run.ROI{rois}, '/', userdir];
     
     for s = subs
       s
@@ -137,7 +138,7 @@ end
 if run.HMM.prep
   
   for rois = 1:numel(run.ROI)
-    PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/'];
+    PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/', userdir];
     for s = subs
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
       [D, POI, dat] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc);
