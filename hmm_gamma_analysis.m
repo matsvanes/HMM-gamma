@@ -208,7 +208,7 @@ PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_sta
       options.Fs = D.fsample;
       options.order = order;
       options.repetitions = numel(realization);
-      
+      options.useParallel = false;
       
       
       % run HMM
