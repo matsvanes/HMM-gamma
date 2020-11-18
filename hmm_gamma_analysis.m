@@ -1,7 +1,7 @@
 %% JOBS
 if ~exist('run', 'var') || isempty(run)
-  run.preproc.bpfilt  = 1;
-  run.preproc.whiten  = 0;
+  run.preproc.bpfilt  = 0;
+  run.preproc.whiten  = 1;
   run.remove_parc     = 0;
   run.TF.run          = 1;
   run.TF.eval         = 0;
@@ -79,11 +79,12 @@ if run.TF.run
     
     PATH.TARGET = [PATH.TF, run.ROI{rois}, '/', userdir];
     PATH.DIPOLE   = [PATH.TARGET, 'peaks_60_90Hz/'];
-    dipole_sorted = load([PATH.TARGET, prefix, '_dip_index_sorted.mat']);
+    dipole_group = load([PATH.TARGET, prefix, '_dip_index_sorted.mat']);
     for s = subs
       s
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
-      [D, POI] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_sorted);
+      dipole_subject = load([PATH.DIPOLE, sprintf('%s_case_%s', prefix, sub(s).id), '.mat']);
+      D = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_group, dipole_subject);
       
       % TF
       S = [];
@@ -140,9 +141,19 @@ if run.HMM.prep
   
   for rois = 1:numel(run.ROI)
     PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/', userdir];
+      dipole_group = load([PATH.TF, run.ROI{rois}, '/','optimised/', 'effd_dip_index_sorted.mat']);
     for s = subs
+      s
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
-      [D, POI, dat] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc);
+      [D, dat] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_group);
+      
+      % select parcel/voxel of interest.
+      if strcmp(run.ROI{rois}, 'parc')
+        if run.remove_parc, POI = 14; else, POI = 23; end
+      elseif strcmp(run.ROI{rois},'M1')
+        dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
+        POI = dipole_subject.voxel;
+      end
       
       PAC{s} = squeeze(dat(POI,:,:));
       t{s} = D.time(1):1/D.fsample:D.time(end);
@@ -164,15 +175,15 @@ if run.HMM.prep
     save([PATH.HMM fname],'X','T','ntrials','t','round_factor','order','D');
     
     % MAR check
-    X_all=cell2mat(X');
-    mkdir([PATH.HMM 'order_check/'])
-    cd([PATH.SCRIPT 'spectra_check/']);
-    for oo=1:20
-      hmmmar_spectra_check(X_all, oo, D.fsample);
-      print('-dpng',[PATH.HMM,'order_check/order_',sprintf('%03d.png',oo)]);
-      close(gcf)
-    end
-    hmmmar_spectra_check(X_all, order, D.fsample);
+%     X_all=cell2mat(X');
+%     mkdir([PATH.HMM 'order_check/'])
+%     cd([PATH.SCRIPT 'spectra_check/']);
+%     for oo=1:20
+%       hmmmar_spectra_check(X_all, oo, D.fsample);
+%       print('-dpng',[PATH.HMM,'order_check/order_',sprintf('%03d.png',oo)]);
+%       close(gcf)
+%     end
+%     hmmmar_spectra_check(X_all, order, D.fsample);
   end %if prep HMM
 end
 

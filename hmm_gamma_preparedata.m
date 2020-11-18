@@ -1,4 +1,4 @@
-function [D, POI, dat] = hmm_gamma_preparedata(PATH, filename, roi, remove_parc, p, dipole_sort)
+function [D, dat] = hmm_gamma_preparedata(PATH, filename, roi, remove_parc, p, dipole_group)
 S = [];
 S.D=spm_eeg_load(fullfile(PATH.DATA, filename));
 if (strcmp(roi, 'parc') || strcmp(roi, 'M1')) && remove_parc
@@ -19,9 +19,6 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
       if remove_parc % or come up with a way to reduce the number of parcels to the rank of the data
         parcels_to_be_del = [1 4 5 6 11 15 17 18 19 34 35 36 37 38 39 40 41 1+41 4+41 5+41 6+41 11+41 15+41 17+41 18+41 19+41 34+41 35+41 36+41 37+41 38+41 39+41 40+41 41+41];
         dat(parcels_to_be_del,:) = [];
-        POI = 14;
-      else
-        POI = 23;
       end
     case 'M1'
       use_montage = 2;
@@ -32,24 +29,12 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
       dat_org = D(dip_index,:,:);
       dat = reshape(dat_org,size(dat_org,1),[]);
       datarank = rank(dat);
-      try
-      fname = extractBetween(filename, 'case_', '_go');
-      prefix = extractBefore(filename, 'case');
       if remove_parc
         % dip_index_sorted is based on the group level T-stats in the [60
         % 90] Hz range and [0 0.5]s window.
-        dip_index_sorted = sort(dipole_sort.dip_index_sorted(1:datarank));
+        dip_index_sorted = sort(dipole_group.dip_index_sorted(1:datarank));
         dat = dat(dip_index_sorted,:);
-        fname = dir([PATH.DIPOLE, prefix, 'case_', sprintf('%s_sel', fname{1}), '.mat']);
-      else
-        fname = dir([PATH.DIPOLE, 'case_', sprintf('%s', fname{1}), '.mat']);
       end      
-      dipole = load([PATH.DIPOLE, fname.name]);
-      POI = dipole.voxel;
-      catch
-        warning('maximum dipole unknown')
-        POI = [];
-      end
   end
   % remove source leakage. Only possible if certain parcels/dipoles were
   % removed.
