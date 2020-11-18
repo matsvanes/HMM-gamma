@@ -5,8 +5,8 @@ if ~exist('run', 'var') || isempty(run)
   run.remove_parc     = 1;
   run.TF.run          = 0;
   run.TF.eval         = 0;
-  run.HMM.prep        = 1;
-  run.HMM.run         = 0;
+  run.HMM.prep        = 0;
+  run.HMM.run         = 1;
   run.HMM.eval        = 0;
   run.HMM.ST          = 0;
   if ~isfield(run.TF, 'ROI') || isempty(run.ROI)
@@ -196,7 +196,11 @@ PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_sta
       mkdir(PATH.HMM_PREC);
       disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
       
-      load([PATH.HMM 'PREP_HMM.mat']);
+      if run.remove_parc
+        load([PATH.HMM 'PREP_HMM_sel.mat']);
+      else
+        load([PATH.HMM 'PREP_HMM.mat']);
+      end
       
       % define HMM params
       options = [];
