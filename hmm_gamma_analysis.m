@@ -64,10 +64,10 @@ if ~exist('timres',  'var'), timres  = 400;       end
 sensor = 0;
 
 % HMM
-round_factor = 1000;
-order        = 5;
-N_states     = [3:1:10];
-realization  = [1:10];
+if ~exist('round_factor', 'var'), round_factor = 1000; end
+if ~exist('order', 'var'), order        = 5; end
+if ~exist('N_states', 'var'), N_states     = [3:1:10]; end
+if ~exist('realization', 'var'), realization  = [1:10]; end
 
 if ~exist('subs', 'var'), subs = 1:length(files); end
 
