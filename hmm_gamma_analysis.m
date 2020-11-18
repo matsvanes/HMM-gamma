@@ -2,10 +2,10 @@
 if ~exist('run', 'var') || isempty(run)
   run.preproc.bpfilt  = 0;
   run.preproc.whiten  = 1;
-  run.remove_parc     = 0;
-  run.TF.run          = 1;
+  run.remove_parc     = 1;
+  run.TF.run          = 0;
   run.TF.eval         = 0;
-  run.HMM.prep        = 0;
+  run.HMM.prep        = 1;
   run.HMM.run         = 0;
   run.HMM.eval        = 0;
   run.HMM.ST          = 0;
@@ -190,18 +190,22 @@ end
 %% RUN HMMs
 if run.HMM.run
   for n=1:length(N_states)
-    for r=1:length(realization)
-      PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
+%     for r=1:length(realization)
+%       PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
+PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/'];
       mkdir(PATH.HMM_PREC);
-      disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states, real ',num2str(realization(r)),' %%%']);
+      disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
       
       load([PATH.HMM 'PREP_HMM.mat']);
       
       % define HMM params
-      load([PATH.SCRIPT 'meg_TMS_hmm_options.mat']);
+      options = [];
       options.K = N_states(n);
       options.Fs = D.fsample;
       options.order = order;
+      options.repetitions = numel(realization);
+      
+      
       
       % run HMM
       clear hmm Gamma
@@ -216,12 +220,13 @@ if run.HMM.run
       end
       
       % estimate gammas & sepctrum
-      [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
-      [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
+%       [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
+%       [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
       
       % save Vars
-      save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
-    end %real
+%       save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
+      save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options','-v7.3');
+%     end %real
   end %states
 end
 
