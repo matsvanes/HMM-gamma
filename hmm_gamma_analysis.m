@@ -42,7 +42,7 @@ PATH.TF       = [PATH.ANALYSIS, 'TF/'];
 PATH.HMM      = [PATH.ANALYSIS 'HMM/'];
 
 PATH.SCRIPT = [PATH.BASE, 'scripts/HMM-gamma/'];
- if ~exist('userdir', 'var'), userdir = []; else, if ~strcmp(userdir(end),'/'), userdir = [userdir, '/']; end, end
+if ~exist('userdir', 'var'), userdir = []; else, if ~strcmp(userdir(end),'/'), userdir = [userdir, '/']; end, end
 
 files=dir([PATH.DATA 'efd_*.mat']);
 subinfo;
@@ -141,7 +141,7 @@ if run.HMM.prep
   
   for rois = 1:numel(run.ROI)
     PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/', userdir];
-      dipole_group = load([PATH.TF, run.ROI{rois}, '/','optimised/', 'effd_dip_index_sorted.mat']);
+    dipole_group = load([PATH.TF, run.ROI{rois}, '/','optimised/', 'effd_dip_index_sorted.mat']);
     for s = subs
       s
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
@@ -151,7 +151,11 @@ if run.HMM.prep
       if strcmp(run.ROI{rois}, 'parc')
         if run.remove_parc, POI = 14; else, POI = 23; end
       elseif strcmp(run.ROI{rois},'M1')
-        dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
+        if isfield(run, 'orig') && run.orig==1
+          dipole_subject = load([PATH.TF, run.ROI{rois}, '/','peaks_60_90Hz_orig/', sprintf('case_%s.mat', sub(s).id)]);
+        else
+          dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
+        end
         POI = dipole_subject.voxel;
       end
       
@@ -175,62 +179,62 @@ if run.HMM.prep
     save([PATH.HMM fname],'X','T','ntrials','t','round_factor','order','D');
     
     % MAR check
-%     X_all=cell2mat(X');
-%     mkdir([PATH.HMM 'order_check/'])
-%     cd([PATH.SCRIPT 'spectra_check/']);
-%     for oo=1:20
-%       hmmmar_spectra_check(X_all, oo, D.fsample);
-%       print('-dpng',[PATH.HMM,'order_check/order_',sprintf('%03d.png',oo)]);
-%       close(gcf)
-%     end
-%     hmmmar_spectra_check(X_all, order, D.fsample);
+    %     X_all=cell2mat(X');
+    %     mkdir([PATH.HMM 'order_check/'])
+    %     cd([PATH.SCRIPT 'spectra_check/']);
+    %     for oo=1:20
+    %       hmmmar_spectra_check(X_all, oo, D.fsample);
+    %       print('-dpng',[PATH.HMM,'order_check/order_',sprintf('%03d.png',oo)]);
+    %       close(gcf)
+    %     end
+    %     hmmmar_spectra_check(X_all, order, D.fsample);
   end %if prep HMM
 end
 
 %% RUN HMMs
 if run.HMM.run
   for n=1:length(N_states)
-%     for r=1:length(realization)
-%       PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
-PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/'];
-      mkdir(PATH.HMM_PREC);
-      disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
-      
-      if run.remove_parc
-        load([PATH.HMM 'PREP_HMM_sel.mat']);
-      else
-        load([PATH.HMM 'PREP_HMM.mat']);
+    %     for r=1:length(realization)
+    %       PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
+    PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/'];
+    mkdir(PATH.HMM_PREC);
+    disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
+    
+    if run.remove_parc
+      load([PATH.HMM 'PREP_HMM_sel.mat']);
+    else
+      load([PATH.HMM 'PREP_HMM.mat']);
+    end
+    
+    % define HMM params
+    options = [];
+    options.K = N_states(n);
+    options.Fs = D.fsample;
+    options.order = order;
+    options.repetitions = numel(realization);
+    options.useParallel = false;
+    
+    
+    % run HMM
+    clear hmm Gamma
+    [hmm{1},Gamma] = hmmmar(X,T,options);
+    
+    % get time vector
+    for s=1:length(T)
+      t{s}=D.time(1):1/D.fsample:D.time(end);
+      for o=1:ntrials{s}
+        t_Gamma{s}{o}=t{s}(hmm{1}.train.order+1):1/D.fsample:t{s}(end);
       end
-      
-      % define HMM params
-      options = [];
-      options.K = N_states(n);
-      options.Fs = D.fsample;
-      options.order = order;
-      options.repetitions = numel(realization);
-      options.useParallel = false;
-      
-      
-      % run HMM
-      clear hmm Gamma
-      [hmm{1},Gamma] = hmmmar(X,T,options);
-      
-      % get time vector
-      for s=1:length(T)
-        t{s}=D.time(1):1/D.fsample:D.time(end);
-        for o=1:ntrials{s}
-          t_Gamma{s}{o}=t{s}(hmm{1}.train.order+1):1/D.fsample:t{s}(end);
-        end
-      end
-      
-      % estimate gammas & sepctrum
-%       [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
-%       [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
-      
-      % save Vars
-%       save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
-      save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options','-v7.3');
-%     end %real
+    end
+    
+    % estimate gammas & sepctrum
+    %       [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
+    %       [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
+    
+    % save Vars
+    %       save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
+    save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options','-v7.3');
+    %     end %real
   end %states
 end
 
