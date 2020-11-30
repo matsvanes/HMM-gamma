@@ -154,7 +154,11 @@ if run.HMM.prep
         if isfield(run, 'orig') && run.orig==1
           dipole_subject = load([PATH.TF, run.ROI{rois}, '/','peaks_60_90Hz_orig/', sprintf('case_%s.mat', sub(s).id)]);
         else
-          dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
+          if run.remove_parc
+            dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
+          else
+            dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s.mat', sub(s).id)]);
+          end            
         end
         POI = dipole_subject.voxel;
       end
@@ -171,11 +175,9 @@ if run.HMM.prep
       X{s}(:,1) = PAC{s}(:); % change format. Within each subject/file cell from matrix (smaplesx trials) to vector (concatenate all trials)
       T{s} = repmat(nsamples{s},1,ntrials{s})';
     end %subj
-    if run.remove_parc
-      fname = 'PREP_HMM_sel.mat';
-    else
-      fname = 'PREP_HMM.mat';
-    end
+    fname = 'PREP_HMM';
+    if run.remove_parc,   fname = [fname, '_sel'];    end
+    if isfield(run, 'orig') && run.orig==1,    fname = [fname ,'_orig'];    end
     save([PATH.HMM fname],'X','T','ntrials','t','round_factor','order','D');
     
     % MAR check
@@ -200,11 +202,10 @@ if run.HMM.run
     mkdir(PATH.HMM_PREC);
     disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
     
-    if run.remove_parc
-      load([PATH.HMM 'PREP_HMM_sel.mat']);
-    else
-      load([PATH.HMM 'PREP_HMM.mat']);
-    end
+    fname = [PATH.HMM, 'PREP_HMM'];
+    if run.remove_parc,  fname = [fname, '_sel']; end
+    if isfield(run, 'orig') && run.orig==1,   fname = [fname, '_orig'];   end
+    load(fname)
     
     % define HMM params
     options = [];
@@ -214,26 +215,29 @@ if run.HMM.run
     options.repetitions = numel(realization);
     options.useParallel = false;
     
-    
     % run HMM
     clear hmm Gamma
-    [hmm{1},Gamma] = hmmmar(X,T,options);
+    [hmm,Gamma] = hmmmar(X,T,options);
     
     % get time vector
     for s=1:length(T)
       t{s}=D.time(1):1/D.fsample:D.time(end);
       for o=1:ntrials{s}
-        t_Gamma{s}{o}=t{s}(hmm{1}.train.order+1):1/D.fsample:t{s}(end);
+        t_Gamma{s}{o}=t{s}(hmm.train.order+1):1/D.fsample:t{s}(end);
       end
     end
     
     % estimate gammas & sepctrum
     %       [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
     %       [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
+    filename = [PATH.HMM_PREC 'POST_HMM'];
+    if run.remove_parc,     filename = [filename, '_sel'];    end
+    if isfield(run, 'orig') && run.orig==1,   filename = [fname, '_orig']; end
     
+    [MLGamma, dynamics, spectra, tf] = hmm_gamma_analysis_hmm_post(X, Gamma, hmm, T, options, 1, filename);
     % save Vars
     %       save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
-    save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options','-v7.3');
+    save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options','MLGamma', 'dynamics', 'spectra', 'tf', '-v7.3');
     %     end %real
   end %states
 end
