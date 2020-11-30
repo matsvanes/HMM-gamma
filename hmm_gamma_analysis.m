@@ -234,7 +234,7 @@ if run.HMM.run
     if run.remove_parc,     filename = [filename, '_sel'];    end
     if isfield(run, 'orig') && run.orig==1,   filename = [fname, '_orig']; end
     
-    [MLGamma, dynamics, spectra, tf] = hmm_gamma_analysis_hmm_post(X, Gamma, hmm, T, options, 1, filename);
+    [MLGamma, dynamics, spectra, tf] = hmm_gamma_hmm_post(X, Gamma, hmm, T, options, 1, filename);
     % save Vars
     %       save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
     save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options','MLGamma', 'dynamics', 'spectra', 'tf', '-v7.3');
