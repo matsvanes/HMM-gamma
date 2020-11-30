@@ -1,41 +1,47 @@
-
-if ~exist('remove_parc', 'var'), remove_parc = 1; end
 PATH_BASE = '/Volumes/T5_OHBA/analysis/HMM-gamma/';
-PATH  = [PATH_BASE 'TF/M1/'];
+PATH  = [PATH_BASE 'TF/M1/optimised/'];
 PATH_TIMING = [PATH_BASE, 'timing/'];
-if remove_parc
-  d = dir([PATH, 'ptf_fsel*.mat']);
-else
-  d = dir([PATH, 'ptf_fefd*.mat']);
-end
-bltype = 'rel';
-if ~exist('subs', 'var'), subs = 1:33; end
+
+if ~exist('remove_parc', 'var'), remove_parc = 0;                            end
+if ~exist('dosave', 'var'),      dosave      = 1;                            end
+if ~exist('bltype', 'var'),      bltype      = 'rel';                        end
+if ~exist('subs', 'var'),        subs        = 1:33;                         end
+if ~exist('doplot', 'var'),      doplot      = 1;                            end
+if ~exist('prefix', 'var'),      prefix      = input('what is the prefix?'); end
+subinfo;
+
 p = parcellation('dk_full');
-time_bl     = [-1 -0.5];
+time_bl     = [-.5 -.1];%[-1 -0.5];
 time_peri   = [0 0.5];
 datarank = 55;
 
 % make subselection of dipole locations
 if remove_parc
-  load([PATH, 'dip_index_sorted.mat']);
-%   dip_index_sorted = [49,64,50,51,36,52,66,67,78,53,54,63,70,37,82,69,77,89,79,68,38,83,71,55,84,41,90,72,81,92,86,80,75,85,65,57,87,91,76,88,42,39,73,56,26,58,27,40,74,43,59,60,44,28,61];
+  sel = 'sel_';
+  load([PATH, prefix, '_dip_index_sorted.mat']);
   dip_index = sort(dip_index_sorted(1:datarank));
 else
+  sel=[];
   dip_index = 1:92;
 end
 
 tf_avT_avE_group = nan(33, length(dip_index), 31);
 for s=subs
-  D = spm_eeg_load([PATH, d(s).name]);
+  d = dir([PATH, sprintf('ptf_%s%s*%s*.mat', sel, prefix, sub(s).id)]);
+  s
+  D = spm_eeg_load([PATH, d.name]);
   t = D.time;
+  t0 = nearest(t, -1.8); 
+  t1 = nearest(t, 1.75);
   f = D.frequencies;
   f0 = nearest(f,60);
   f1 = nearest(f,90);
   fS = f(f0:f1);
-  tf = D(:,f0:f1,:,:);
+  tf = D(:,f0:f1,t0:t1,:);
+  chanlabels = D.chanlabels;
   
   % load timing of individual trials
-  tmp = extractBetween(d(s).name, 'case_', '_go');
+  tmp = extractBetween(d.name, 'case_', '_go');
   tmp = dir([PATH_TIMING, 'emgf*', sprintf('%s*', tmp{1})]);
   load([PATH_TIMING tmp.name, '/Timings.mat']);
   
@@ -69,16 +75,18 @@ for s=subs
   tf_2d = squeeze(mean(tf_blc(voxel,:,:,:),4));
   tf_3d = squeeze(tf_blc(voxel,:,:,:));
   tf_2d_group(:,:,s) = tf_2d;
-  
-  tmp = extractBetween(d(s).name, 'efd_', '_go');
+  if doplot
+  tmp = extractBetween(d.name, sprintf('%s_', prefix), '_go');
   if remove_parc
-    filename = [PATH,'peaks_60_90Hz/', tmp{1},'_sel'];
+    filename = [PATH,'peaks_60_90Hz/', prefix, '_', tmp{1},'_sel'];
   else
-    filename = [PATH,'peaks_60_90Hz/', tmp{1}];
+    filename = [PATH,'peaks_60_90Hz/', prefix,'_', tmp{1}];
   end
-  save([filename, '.mat'],'voxel','peakfreq','power', 'dip_index', 'tf_2d', 'tf_3d');
+  if dosave
+    save([filename, '.mat'],'voxel','peakfreq','power', 'dip_index', 'tf_2d', 'tf_3d');
+  end
   
-  h = figure; h.WindowState = 'maximized';
+  h = figure;% h.WindowState = 'maximized';
   % subplot(4,2,[1 3]);hold on;
   subplot(2,2,1); hold on
   plot(fS,tf_blc_avT_avE,'color',[0.4 0.4 0.4]);
@@ -86,7 +94,7 @@ for s=subs
   plot([peakfreq peakfreq],[min(tf_blc_avT_avE(:)) max(tf_blc_avT_avE(:))],'m--','Linewidth',2);
   grid on;axis tight;
   xticks([f(1):1:f(end)]);
-  title([{d(s).name,'Power per frequency per M1 Voxel between movement on and -offset'}],'interp','none');
+  title([{d.name,'Power per frequency per M1 Voxel between movement on and -offset'}],'interp','none');
   ylabel('Power');xlabel('Frequency (Hz)');
   set(gca,'Fontsize',13);
   
@@ -144,17 +152,19 @@ for s=subs
   zlabel('I to S');ylabel('A to P');xlabel('L to R');
   title('green encircled voxel is the maximum voxel')
   %p.plot;%gives glassbrain, but cant be a subplot
-  
-  print('-dpng',[filename '.png']);pause(1);
-  close;
+  if dosave
+    saveas(h, [filename], 'png');pause(10);
+  end
 end
-
+  close; clear tf_blc_avT_avE h avB tf_blc tf_avT tf_blc_avT tf_2d tf_3d tf_blc_avF_avT_avE tf stat D
+end
+%%
 % plot group stats
 dat = [];
 dat.powspctrm = tf_avT_avE_group;
 dat.dimord = 'rpt_chan_freq';
 dat.freq = fS;
-dat.label = D.chanlabels;
+dat.label = chanlabels;
 
 datB = rmfield(dat, 'powspctrm');
 datB.powspctrm = dat.powspctrm*0;
@@ -177,11 +187,13 @@ T=max(T,[],2); % select maximum frequency for each location
 
 [T_sort, dip_index_sorted] = sort(T,1, 'descend');
 if remove_parc
-  filename = [PATH,'dip_index_sorted_sel.mat'];
+  filename = [PATH, sprintf('%s_',prefix), 'dip_index_sorted_sel.mat'];
 else
-  filename = [PATH,'dip_index_sorted.mat'];
+  filename = [PATH, sprintf('%s_',prefix), 'dip_index_sorted.mat'];
 end
-  save(filename, 'dip_index_sorted','T_sort', 'stat', 'tf_2d_group')
+if dosave
+  save(filename, 'dip_index_sorted', 'T_sort', 'stat', 'tf_2d_group')
+end
 
 M1_idx = dip_index_sorted(1:datarank);
 
@@ -193,12 +205,12 @@ cmap = flipud(brewermap(64, 'RdBu'));
 colormap(cmap)
 title('group average TF for subject specific locations')
 rectangle('Position',[time_bl(1) fS(1) time_bl(2)-time_bl(1) fS(end)-fS(1)],'Linestyle','--','Linewidth',2);
-  
-  set(gca,'YDir','normal');
-  axis tight;
-  cb=colorbar;cb.Position=[0.92 0.15 0.01 0.3];
-  cc = max(abs(tf_2d_groupav(:)));caxis([-cc cc]);
-  xlabel('Time (s)');ylabel('Frequency (Hz)');
+
+set(gca,'YDir','normal');
+axis tight;
+cb=colorbar;cb.Position=[0.92 0.15 0.01 0.3];
+cc = max(abs(tf_2d_groupav(:)));caxis([-cc cc]);
+xlabel('Time (s)');ylabel('Frequency (Hz)');
 
 % plot the average T-value for each location
 steps = 6;
@@ -231,9 +243,11 @@ zlabel('I to S');ylabel('A to P');xlabel('L to R');
 title('maximum T per selected per location - group level spatiospectral stat')
 
 if remove_parc
-  filename = [PATH, 'groupT_dipole_select_sel', '.png'];
+  filename = [PATH, sprintf('%s_groupT_dipole_select_sel', prefix), '.png'];
 else
-  filename = [PATH, 'groupT_dipole_select', '.png'];
+  filename = [PATH, sprintf('%s_groupT_dipole_select', prefix), '.png'];
 end
+if dosave
   print('-dpng',filename);pause(1);
+end
 
