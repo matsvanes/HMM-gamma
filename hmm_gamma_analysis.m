@@ -158,7 +158,7 @@ if run.HMM.prep
             dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
           else
             dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s.mat', sub(s).id)]);
-          end            
+          end
         end
         POI = dipole_subject.voxel;
       end
@@ -233,12 +233,12 @@ if run.HMM.run
     filename = [PATH.HMM_PREC 'POST_HMM'];
     if run.remove_parc,     filename = [filename, '_sel'];    end
     if isfield(run, 'orig') && run.orig==1,   filename = [fname, '_orig']; end
-    
-    [MLGamma, dynamics, spectra, tf] = hmm_gamma_hmm_post(X, Gamma, hmm, T, options, 1, filename);
-    % save Vars
-    %       save([PATH.HMM_PREC 'POST_HMM'],'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma*','spectra*','options*','-v7.3');
-    save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options','MLGamma', 'dynamics', 'spectra', 'tf', '-v7.3');
-    %     end %real
+    try
+      [MLGamma, dynamics, spectra, tf] = hmm_gamma_hmm_post(X, Gamma, hmm, T, options, 1, filename);
+      save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options','MLGamma', 'dynamics', 'spectra', 'tf', '-v7.3');
+    catch
+      save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
+    end
   end %states
 end
 
