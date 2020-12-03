@@ -51,7 +51,7 @@ else
   use_montage = 0;
   D = D.montage('switch', use_montage);
   dat = D(:,:,:);
-  Dtmp = D.montage('remove', 1:6);
+  Dtmp = D.montage('remove', 1:D.montage('getnumber'));
   Dtmp(:,:,:)=dat;
   D=Dtmp;
 end
