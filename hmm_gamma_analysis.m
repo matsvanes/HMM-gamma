@@ -42,7 +42,7 @@ PATH.TF       = [PATH.ANALYSIS, 'TF/'];
 PATH.HMM      = [PATH.ANALYSIS 'HMM/'];
 
 PATH.SCRIPT = [PATH.BASE, 'scripts/HMM-gamma/'];
-if ~exist('userdir', 'var'), userdir = []; else, if ~strcmp(userdir(end),'/'), userdir = [userdir, '/']; end, end
+if ~exist('userdir', 'var') || isempty(userdir), userdir = []; else, if ~strcmp(userdir(end),'/'), userdir = [userdir, '/']; end, end
 
 files=dir([PATH.DATA 'efd_*.mat']);
 subinfo;
@@ -78,13 +78,19 @@ if run.TF.run
   for rois = 1:numel(run.ROI)
     
     PATH.TARGET = [PATH.TF, run.ROI{rois}, '/', userdir];
-    PATH.DIPOLE   = [PATH.TARGET, 'peaks_60_90Hz/'];
-    dipole_group = load([PATH.TARGET, prefix, '_dip_index_sorted.mat']);
+    if strcmp(run.ROI{rois}, 'M1')
+      PATH.DIPOLE   = [PATH.TARGET, 'peaks_60_90Hz/'];
+      dipole_group = load([PATH.TARGET, prefix, '_dip_index_sorted.mat']);
+    else
+      dipole_group = [];
+    end
     for s = subs
       s
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
-      dipole_subject = load([PATH.DIPOLE, sprintf('%s_case_%s', prefix, sub(s).id), '.mat']);
-      D = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_group, dipole_subject);
+      if strcmp(run.ROI{rois}, 'M1')
+        dipole_subject = load([PATH.DIPOLE, sprintf('%s_case_%s', prefix, sub(s).id), '.mat']);
+      end
+      D = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_group);
       
       % TF
       S = [];
@@ -233,11 +239,13 @@ if run.HMM.run
     filename = [PATH.HMM_PREC 'POST_HMM'];
     if run.remove_parc,     filename = [filename, '_sel'];    end
     if isfield(run, 'orig') && run.orig==1,   filename = [fname, '_orig']; end
+    
+    save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
     try
       [MLGamma, dynamics, spectra, tf] = hmm_gamma_hmm_post(X, Gamma, hmm, T, options, 1, filename);
-      save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options','MLGamma', 'dynamics', 'spectra', 'tf', '-v7.3');
+      save(filename,'MLGamma', 'dynamics', 'spectra', 'tf', '-append');
     catch
-      save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
+      warning('hmm_gamma_hmm_post failed')
     end
   end %states
 end
