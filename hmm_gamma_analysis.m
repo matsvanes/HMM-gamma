@@ -78,7 +78,7 @@ if run.TF.run
   for rois = 1:numel(run.ROI)
     
     PATH.TARGET = [PATH.TF, run.ROI{rois}, '/', userdir];
-    if strcmp(run.ROI{rois}, 'M1')
+    if strcmp(run.ROI{rois}, 'M1') && run.remove_parc
       PATH.DIPOLE   = [PATH.TARGET, 'peaks_60_90Hz/'];
       dipole_group = load([PATH.TARGET, prefix, '_dip_index_sorted.mat']);
     else
@@ -87,7 +87,7 @@ if run.TF.run
     for s = subs
       s
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
-      if strcmp(run.ROI{rois}, 'M1')
+      if strcmp(run.ROI{rois}, 'M1') && run.remove_parc
         dipole_subject = load([PATH.DIPOLE, sprintf('%s_case_%s', prefix, sub(s).id), '.mat']);
       end
       D = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_group);
