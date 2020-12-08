@@ -181,7 +181,7 @@ if run.HMM.prep
       X{s}(:,1) = PAC{s}(:); % change format. Within each subject/file cell from matrix (smaplesx trials) to vector (concatenate all trials)
       T{s} = repmat(nsamples{s},1,ntrials{s})';
     end %subj
-    fname = 'PREP_HMM';
+    fname = [prefix '_PREP_HMM'];
     if run.remove_parc,   fname = [fname, '_sel'];    end
     if isfield(run, 'orig') && run.orig==1,    fname = [fname ,'_orig'];    end
     save([PATH.HMM fname],'X','T','ntrials','t','round_factor','order','D');
@@ -208,7 +208,7 @@ if run.HMM.run
     mkdir(PATH.HMM_PREC);
     disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
     
-    fname = [PATH.HMM, 'PREP_HMM'];
+    fname = [PATH.HMM, prefix, '_PREP_HMM'];
     if run.remove_parc,  fname = [fname, '_sel']; end
     if isfield(run, 'orig') && run.orig==1,   fname = [fname, '_orig'];   end
     load(fname)
