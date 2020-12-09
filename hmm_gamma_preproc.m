@@ -54,8 +54,9 @@ end
 subinfo;
 if ~exist('prefix', 'var'), prefix = 'fd'; end
 %% PARAMS
+subinfo
 % subjects
-if ~exist('subs', 'var'), subs = 1:length(files); end
+if ~exist('subs', 'var'), subs = 1:numel(sub); end
 
 % Timing
 time_epoch  = [-2000 2000];
@@ -66,17 +67,17 @@ time_post   = [1 1.5];
 
 %% 1. DOWNSAMPLE & FILTER
 if run.preproc.filt
-  files=dir([PATH_ORIGDATA, 'case*_tsss.mat']);
   for s = subs
-    meg_tms_preproc01_df(PATH_ORIGDATA,files(s).name);
+    files=dir([PATH_ORIGDATA sprintf('%s_*%s*.mat', 'fd', sub(s).id)]);
+    meg_tms_preproc01_df(PATH_ORIGDATA,files.name);
   end
 end
 
 %% 2. ICA
 if run.preproc.ica_run || run.preproc.ica_id
-  files=dir([PATH_ORIGDATA 'fd_*.mat']);
   for s = subs
-    D = spm_eeg_load([PATH_ORIGDATA files(s).name]);
+    files=dir([PATH_ORIGDATA sprintf('%s_*%s*.mat', 'fd', sub(s).id)]);
+    D = spm_eeg_load([PATH_ORIGDATA files.name]);
     if run.preproc.ica_run
       D = osl_detect_artefacts(D,'modalities',{'MEGMAG','MEGPLANAR'},'badchannels',true,'badtime',true,'dummy_epoch_tsize',1);
       D = osl_africa(D,'artefact_channels',{'EOG','ECG'},'used_maxfilter',true,'do_ica',true,'do_ident','auto','do_remove',true,'precompute_topos',true);
@@ -92,12 +93,11 @@ end
 
 %% 3. TRIGGER
 if run.preproc.trigger
-  files=dir([PATH_ORIGDATA 'fd_*.mat']);
-  
   for s = subs
-    load([PATH_RT 'emgf' files(s).name '/Timings.mat']);
+    files=dir([PATH_ORIGDATA sprintf('%s_*%s*.mat', 'fd', sub(s).id)]);
+    load([PATH_RT 'emgf' files.name '/Timings.mat']);
     
-    D = spm_eeg_load([PATH_ORIGDATA files(s).name]);
+    D = spm_eeg_load([PATH_ORIGDATA files.name]);
     Events = D.events;
     % remove old events (from previous iterations of this script)
     to_be_deleted=[];
