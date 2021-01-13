@@ -1,4 +1,4 @@
-function [MLGamma, dynamics, spectra, tf] = hmm_gamma_analysis_hmm_post(X, Gamma, hmm, T, options, doplot, filename)
+function [MLGamma, dynamics, spectra, tf] = hmm_gamma_hmm_post(X, Gamma, hmm, T, options, doplot, filename)
 if ~exist('doplot', 'var'), doplot=1; end
 
 % Post process HMM
@@ -34,7 +34,7 @@ for ii=1:numel(T)
   for jj=1:length(T{ii})
     tf_tmp{ii}(:,:,jj)=tf(t0+sum(T{ii}(1:jj))-sum(T{ii}(jj)) +1 : t0+ sum(T{ii}(1:jj)),:);
   end
-  tf_avgTr{ii} = nanmean(tf_tmp{ii},3)/numel(T{ii});
+  tf_avgTr{ii} = nanmean(tf_tmp{ii},3);
 end
 tf = tf_tmp;
 tf_avgTr = permute(cat(3, tf_avgTr{:}), [3 1 2]);
@@ -42,10 +42,9 @@ tf_avgTr = permute(cat(3, tf_avgTr{:}), [3 1 2]);
 % group TF
 tf_avgT_avgS = squeeze(nanmean(tf_avgTr,1));
 t1=nearest(time,-0.6); t2=nearest(time,-0.2);
-tf_avgT_blC_avgS = squeeze(nanmean(tf_avgTr - repmat(nanmean(tf_avgTr(:,t1:t2,:),2),[1,size(tf_avgTr,2),1])));
 
 if doplot
-  hmm_post_plot(options, T, time, dynamics.F0, spectra, tf_avgT_blC_avgS, MLGamma);
+  hmm_post_plot(options, T, time, dynamics.F0, spectra, tf_avgT_avgS, MLGamma);
   if ~exist('filename', 'var') || isempty(filename)
     filename = 'HMM';
   end
