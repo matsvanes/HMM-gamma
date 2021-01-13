@@ -11,7 +11,7 @@ if ~exist('prefix', 'var'),      prefix      = input('what is the prefix?'); end
 subinfo;
 
 p = parcellation('dk_full');
-time_bl     = [-.5 -.1];%[-1 -0.5];
+time_bl     = [-.6 -.2];%[-1 -0.5];
 time_peri   = [0 0.5];
 datarank = 55;
 
@@ -56,16 +56,8 @@ for s=subs
       tf_blc = (tf./avB)-1;
   end
   
-  [s1,s2,s3,s4] = size(tf_blc);
-  tf_blc_avT = nan(s1,s2,s4);
-  for e=1:size(tf_blc,4)
-    clear MT_start_ind MT_end_ind
-    MT_start_ind = nearest(t,(time_peri(1))); %movement onset
-    MT_end_ind = nearest(t, (time_peri(1)+(MT(e)/1000))); % movement offset
-    tf_blc_avT(:,:,e)=squeeze(mean(tf_blc(:,:,MT_start_ind:MT_end_ind,e),3)); % av over time (avT)
-    tf_avT(:,:,e)=squeeze(mean(tf(:,:,MT_start_ind:MT_end_ind,e),3)); % av over time (avT)
-  end
-  tf_blc_avT_avE=squeeze(nanmean(tf_blc_avT,3)); % av over epochs
+  % Average over time (trial specific)
+  tf_blc_avT_avE = tf_trialspecific_timeavg(tf_blc, MT, t);
   tf_avT_avE_group(s,:,:)=tf_blc_avT_avE; % av over epochs
   
   % max voxel in spectrospatial space
@@ -156,7 +148,7 @@ for s=subs
     saveas(h, [filename], 'png');pause(10);
   end
 end
-  close; clear tf_blc_avT_avE h avB tf_blc tf_avT tf_blc_avT tf_2d tf_3d tf_blc_avF_avT_avE tf stat D
+  close; clear tf_blc_avT_avE h avB tf_blc tf_blc_avT tf_2d tf_3d tf_blc_avF_avT_avE tf stat D
 end
 %%
 % plot group stats
