@@ -2,12 +2,24 @@ function [D, dat] = hmm_gamma_preparedata(PATH, filename, roi, remove_parc, p, d
 if ~exist('timewin', 'var'), timewin = []; end
 S = [];
 S.D=spm_eeg_load(fullfile(PATH.DATA, filename));
+if ~isempty(timewin)
+  S.timewin = 1000*timewin;
+  S.prefix = 'tmp';
+  D = spm_eeg_crop(S);
+  
+  S = [];
+  S.D = D;
+end
 if (strcmp(roi, 'parc') || strcmp(roi, 'M1')) && remove_parc
   S.outfile = [PATH.TARGET, 'sel_', filename];
 else
   S.outfile = fullfile(PATH.TARGET, filename);
 end
 D = spm_eeg_copy(S);
+if ~isempty(timewin)
+  delete([fullfile(PATH.DATA, ['tmp', filename(1:end-4)]), '*'])
+end
+
 if strcmp(roi, 'M1') || strcmp(roi, 'parc')
   % orthogonalise
   switch roi
@@ -24,12 +36,6 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
     case 'M1'
       use_montage = 2;
       D = D.montage('switch', use_montage);
-      if ~isempty(timewin)
-        S=[];
-        S.D = D;
-        S.timewin = timewin;
-        D = spm_eeg_crop(S);
-      end
       M1idx = find(contains(p.labels, 'Left Precentral'));
       dip_index = p.parcelflag;
       dip_index = find(dip_index(:,M1idx)); % find the dipole locations in the M1 parcel
