@@ -11,7 +11,7 @@ if ~exist('run','var') || isempty(run)
   run.preproc.copy        = 1;
   run.preproc.normalise   = 1;
   run.preproc.whiten      = 0;
-  run.preproc.bpfilt      = 1;
+  run.preproc.bpfilt      = 0;
   run.preproc.coreg       = 1;
   run.preproc.check_coreg = 0;
   run.preproc.parcel      = 1;
