@@ -68,10 +68,10 @@ if run.HMM.run==1
   % general settings
   if ~exist('N_states', 'var'),    N_states     = [3:1:10]; end
   if ~exist('realization', 'var'), realization  = [1:10];   end
+  if ~exist('round_factor', 'var'), round_factor = 1000; end
   % model specific settings
   if strcmp(run.HMM.model, 'mar')
     PATH.HMM = [PATH.HMM 'MAR/'];
-    if ~exist('round_factor', 'var'), round_factor = 1000; end
     if ~exist('order', 'var'),        order        = 5;    end
   elseif strcmp(run.HMM.model, 'tde')
     PATH.HMM = [PATH.HMM 'TDE/'];
@@ -175,9 +175,9 @@ if run.HMM.prep
           dipole_subject = load([PATH.TF, run.ROI{rois}, '/','peaks_60_90Hz_orig/', sprintf('case_%s.mat', sub(s).id)]);
         else
           if run.remove_parc
-            dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
+            dipole_subject = load([PATH.TF, run.ROI{rois}, '/','peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
           else
-            dipole_subject = load([PATH.TF, run.ROI{rois}, '/','optimised/peaks_60_90Hz/', sprintf('effd_case_%s.mat', sub(s).id)]);
+            dipole_subject = load([PATH.TF, run.ROI{rois}, '/','peaks_60_90Hz/', sprintf('effd_case_%s.mat', sub(s).id)]);
           end
         end
         POI = dipole_subject.voxel;
