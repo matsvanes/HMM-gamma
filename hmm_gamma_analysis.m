@@ -1,15 +1,13 @@
 %% JOBS
 if ~exist('run', 'var') || isempty(run)
   run.preproc.bpfilt  = 0;
-  run.preproc.whiten  = 0;
+  run.preproc.whiten  = 1;
   run.remove_parc     = 0;
-  run.TF.run          = 1;
+  run.TF.run          = 0;
   run.TF.eval         = 0;
-  run.HMM.prep        = 0;
-  run.HMM.run         = 0;
-  run.HMM.model       = 'mar'; % can be 'tde'
-  run.HMM.eval        = 0;
-  run.HMM.ST          = 0;
+  run.HMM.prep        = 1;
+  run.HMM.run         = 1;
+  run.HMM.model       = 'tde'; % can be 'mar', 'tde'
   if ~isfield(run.TF, 'ROI') || isempty(run.ROI)
     run.ROI          = input('which ROIs do you want to analyze?{sensor, parc, M1'); % can be 'sensor', 'parc', 'M1'
   end
@@ -63,6 +61,7 @@ if ~exist('freqres', 'var'), freqres = 5;         end % 2.5
 if ~exist('timres',  'var'), timres  = 200;       end % 400
 
 sensor = 0;
+if ~exist('timewin',  'var'), timewin  = [];       end
 
 % HMM
 if run.HMM.run==1 
@@ -71,9 +70,11 @@ if run.HMM.run==1
   if ~exist('realization', 'var'), realization  = [1:10];   end
   % model specific settings
   if strcmp(run.HMM.model, 'mar')
+    PATH.HMM = [PATH.HMM 'MAR/'];
     if ~exist('round_factor', 'var'), round_factor = 1000; end
     if ~exist('order', 'var'),        order        = 5;    end
   elseif strcmp(run.HMM.model, 'tde')
+    PATH.HMM = [PATH.HMM 'TDE/'];
     order = 0;
     covtype = 'full';
     zeromean = 1;
@@ -160,11 +161,11 @@ if run.HMM.prep
   
   for rois = 1:numel(run.ROI)
     PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/', userdir];
-    dipole_group = load([PATH.TF, run.ROI{rois}, '/','optimised/', 'effd_dip_index_sorted.mat']);
+    dipole_group = load([PATH.TF, run.ROI{rois}, '/', 'effd_dip_index_sorted.mat']);
     for s = subs
       s
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
-      [D, dat] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_group);
+      [D, dat] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_group, timewin);
       
       % select parcel/voxel of interest.
       if strcmp(run.ROI{rois}, 'parc')

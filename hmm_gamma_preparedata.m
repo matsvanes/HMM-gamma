@@ -1,4 +1,5 @@
-function [D, dat] = hmm_gamma_preparedata(PATH, filename, roi, remove_parc, p, dipole_group)
+function [D, dat] = hmm_gamma_preparedata(PATH, filename, roi, remove_parc, p, dipole_group, timewin)
+if ~exist('timewin', 'var'), timewin = []; end
 S = [];
 S.D=spm_eeg_load(fullfile(PATH.DATA, filename));
 if (strcmp(roi, 'parc') || strcmp(roi, 'M1')) && remove_parc
@@ -23,6 +24,12 @@ if strcmp(roi, 'M1') || strcmp(roi, 'parc')
     case 'M1'
       use_montage = 2;
       D = D.montage('switch', use_montage);
+      if ~isempty(timewin)
+        S=[];
+        S.D = D;
+        S.timewin = timewin;
+        D = spm_eeg_crop(S);
+      end
       M1idx = find(contains(p.labels, 'Left Precentral'));
       dip_index = p.parcelflag;
       dip_index = find(dip_index(:,M1idx)); % find the dipole locations in the M1 parcel
