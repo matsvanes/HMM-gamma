@@ -1,12 +1,13 @@
 %% JOBS
 if ~exist('run', 'var') || isempty(run)
   run.preproc.bpfilt  = 0;
-  run.preproc.whiten  = 1;
-  run.remove_parc     = 1;
-  run.TF.run          = 0;
+  run.preproc.whiten  = 0;
+  run.remove_parc     = 0;
+  run.TF.run          = 1;
   run.TF.eval         = 0;
   run.HMM.prep        = 0;
-  run.HMM.run         = 1;
+  run.HMM.run         = 0;
+  run.HMM.model       = 'mar'; % can be 'tde'
   run.HMM.eval        = 0;
   run.HMM.ST          = 0;
   if ~isfield(run.TF, 'ROI') || isempty(run.ROI)
@@ -56,20 +57,32 @@ p = parcellation('dk_full');
 % TF
 keep = 0;
 megtype = 'neuromag_sss';
-if ~exist('time_bl', 'var'), time_bl = [-1 -0.5]; end
-if ~exist('freq',    'var'), freq    = 5:1:145;   end
-if ~exist('freqres', 'var'), freqres = 2.5;       end
-if ~exist('timres',  'var'), timres  = 400;       end
+if ~exist('time_bl', 'var'), time_bl = [-.6 -.2]; end %  [-1 -0.5];
+if ~exist('freq',    'var'), freq    = 60:90;     end % 5:1:145
+if ~exist('freqres', 'var'), freqres = 5;         end % 2.5
+if ~exist('timres',  'var'), timres  = 200;       end % 400
 
 sensor = 0;
 
 % HMM
-if ~exist('round_factor', 'var'), round_factor = 1000; end
-if ~exist('order', 'var'), order        = 5; end
-if ~exist('N_states', 'var'), N_states     = [3:1:10]; end
-if ~exist('realization', 'var'), realization  = [1:10]; end
+if run.HMM.run==1 
+  % general settings
+  if ~exist('N_states', 'var'),    N_states     = [3:1:10]; end
+  if ~exist('realization', 'var'), realization  = [1:10];   end
+  % model specific settings
+  if strcmp(run.HMM.model, 'mar')
+    if ~exist('round_factor', 'var'), round_factor = 1000; end
+    if ~exist('order', 'var'),        order        = 5;    end
+  elseif strcmp(run.HMM.model, 'tde')
+    order = 0;
+    covtype = 'full';
+    zeromean = 1;
+    if ~exist('embeddedlags', 'var'), embeddedlags = -3:3; end
+    if ~exist('pca', 'var'),          pca = 0;             end
+  end
+end
 
-if ~exist('subs', 'var'), subs = 1:length(files); end
+if ~exist('subs', 'var'), subs = 1:length(sub); end
 
 %% RUN TF
 if run.TF.run
