@@ -2,9 +2,8 @@ function [MLGamma, dynamics, spectra, tf] = hmm_gamma_hmm_post(X, Gamma, hmm, T,
 if ~exist('doplot', 'var'), doplot=1; end
 
 % Post process HMM
-if iscell(hmm)
-  hmm = hmm{1};
-end
+if iscell(hmm),   hmm  = hmm{1};  end
+if iscell(time),  time = time{1}; end
 
 % Pad Gamma until original length
 Gamma_pad = padGamma(Gamma,T,options);
@@ -27,6 +26,9 @@ else
   spectra = hmmspectramt(cat(1,X{:}), cat(1,T{:}), Gamma, options);
 end
 
+% reshape Gamma into ntime*ntrl*nstates
+Gamma = reshape(Gamma,T{1}(1),[],4);
+
 % HMM based time-frequency representation
 tf = hmmtimefreq(spectra, Gamma_pad, 1);
 
@@ -45,8 +47,12 @@ tf_avgTr = permute(cat(3, tf_avgTr{:}), [3 1 2]);
 % group TF
 tf_avgT_avgS = squeeze(nanmean(tf_avgTr,1));
 
+% Compute TF using mtmconvol
+cfg.foi = 1:100;
+tfconvol = hmmtimefreqconvol(cfg, Gamma, T, time, dynamics.F0);
+
 if doplot
-  hmm_post_plot(options, T, time{1}, dynamics.F0, spectra, tf_avgT_avgS, MLGamma);
+  hmm_post_plot(options, T, time, dynamics.F0, MLGamma, spectra, tf_avgT_avgS, tfconvol);
   if ~exist('filename', 'var') || isempty(filename)
     filename = 'HMM';
   end
