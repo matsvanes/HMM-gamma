@@ -1,4 +1,4 @@
-function [MLGamma, dynamics, spectra, tf] = hmm_gamma_hmm_post(X, Gamma, hmm, T, options, doplot, filename)
+function [MLGamma, dynamics, spectra, tf] = hmm_gamma_hmm_post(X, Gamma, hmm, T, time, options, doplot, filename)
 if ~exist('doplot', 'var'), doplot=1; end
 
 % Post process HMM
@@ -8,7 +8,6 @@ end
 
 % Pad Gamma until original length
 Gamma_pad = padGamma(Gamma,T,options);
-time = -2:1/500:2;
 
 % Measures of state dynamics
 dynamics=[];
@@ -22,7 +21,11 @@ MLGamma = gammaRasterPlot(Gamma_pad, cat(1,T{:}));
 MLGamma = reshape(MLGamma,T{1}(1),[]);
 
 % State spectra
-spectra = hmmspectramar(cat(1,X{:}),cat(1,T{:}),hmm, Gamma,options);
+if options.order>0
+  spectra = hmmspectramar(cat(1,X{:}), cat(1,T{:}), hmm, Gamma, options);
+else
+  spectra = hmmspectramt(cat(1,X{:}), cat(1,T{:}), Gamma, options);
+end
 
 % HMM based time-frequency representation
 tf = hmmtimefreq(spectra, Gamma_pad, 1);
@@ -41,10 +44,9 @@ tf_avgTr = permute(cat(3, tf_avgTr{:}), [3 1 2]);
 
 % group TF
 tf_avgT_avgS = squeeze(nanmean(tf_avgTr,1));
-t1=nearest(time,-0.6); t2=nearest(time,-0.2);
 
 if doplot
-  hmm_post_plot(options, T, time, dynamics.F0, spectra, tf_avgT_avgS, MLGamma);
+  hmm_post_plot(options, T, time{1}, dynamics.F0, spectra, tf_avgT_avgS, MLGamma);
   if ~exist('filename', 'var') || isempty(filename)
     filename = 'HMM';
   end
