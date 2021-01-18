@@ -256,8 +256,8 @@ if run.HMM.run
     
     save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
     try
-      [MLGamma, dynamics, spectra, tf, tfconvol] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
-      save(filename,'MLGamma', 'dynamics', 'spectra', 'tf','tfconvol', '-append');
+      [Gamma, MLGamma, dynamics, spectra, tf, tfconvol] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
+      save(filename,'Gamma', 'MLGamma', 'dynamics', 'spectra', 'tf','tfconvol', '-append');
     catch
       warning('hmm_gamma_hmm_post failed')
     end

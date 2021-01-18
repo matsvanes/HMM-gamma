@@ -1,4 +1,4 @@
-function [MLGamma, dynamics, spectra, tf, tfconvol] = hmm_gamma_hmm_post(X, Gamma, hmm, T, time, options, doplot, filename)
+function [Gamma, MLGamma, dynamics, spectra, tf, tfconvol] = hmm_gamma_hmm_post(X, Gamma, hmm, T, time, options, doplot, filename)
 if ~exist('doplot', 'var'), doplot=1; end
 
 % Post process HMM
