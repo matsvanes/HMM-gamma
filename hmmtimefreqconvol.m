@@ -1,4 +1,4 @@
-function [psd_tf, psd_tf_norm] = hmmtimefreqconvol(cfg, Gamma,T, time, F0)
+function tfconvol = hmmtimefreqconvol(cfg, Gamma,T, time, F0)
 % obtains a time-frequency representation of state time courses, using
 % convolution (in contrast to hmmtimefreq, which uses the HMM spectra). 
 % The argument Gamma contains the state time courses. 
@@ -57,3 +57,9 @@ for k=1:numel(ntrl)
 %   psd_tf{k} = psd_tf{k}-repmat(nanmean(psd_tf{k},1),[s1,1,1]);
   psd_tf_norm{k} = mean(psd_tf{k}.*permute(repmat(F0ds, [1,1,s2]), [1,3,2]),3);
 end
+
+tfconvol = [];
+tfconvol.tf = psd_tf;
+tfconvol.tf_norm = psd_tf_norm;
+tfconvol.time = freq.time;
+tfconvol.freq = freq.freq;
