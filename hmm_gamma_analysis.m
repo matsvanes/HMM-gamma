@@ -234,6 +234,12 @@ if run.HMM.run
     options.order = order;
     options.repetitions = numel(realization);
     options.useParallel = false;
+    if strcmp(run.HMM.model, 'tde')
+      options.covtype = covtype;
+      options.zeromean = zeromean;
+      options.embeddedlags = embeddedlags;
+      options.pca = pca;
+    end   
     
     % run HMM
     clear hmm Gamma
