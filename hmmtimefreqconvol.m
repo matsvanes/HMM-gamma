@@ -1,4 +1,4 @@
-function psd_tf = hmmtimefreqconvol(cfg, Gamma,T, time, F0)
+function [psd_tf, psd_tf_norm] = hmmtimefreqconvol(cfg, Gamma,T, time, F0)
 % obtains a time-frequency representation of state time courses, using
 % convolution (in contrast to hmmtimefreq, which uses the HMM spectra). 
 % The argument Gamma contains the state time courses. 
@@ -16,10 +16,11 @@ if ~isfield(cfg, 't_ftimwin'), cfg.t_ftimwin  = 0.200*ones(1,length(cfg.foi));  
 cfg.method = 'mtmconvol';
 cfg.output = 'pow';
 cfg.taper = 'dpss';
-cfg.toi = time(1):1/0.05:time(end);
-cfg.pad = 2^nextpow2(time(end)-time(1));
+cfg.toi = time(1):0.05:time(end);
+cfg.pad = 2^nextpow2(time(end)-time(1)+diff(time(1:2)));
 cfg.keeptrials = 'yes';
 
+remember = [osldir, '/osl-core/osl_startup'];
 osl_shutdown()
 pathinfo; addpath(fieldtrippath)
 ft_defaults
@@ -32,15 +33,17 @@ dat.trial = permute(reshape(Gamma, [ntrials,nsamples,nstates]), [1,3,2]);
 for k=1:nstates
   dat.label{k} = sprintf('chan%02d', k);
 end
-dat.time = time(nstates+1:end);
+dat.time = time;
 
 freq = ft_freqanalysis(cfg, dat);
+restoredefaultpath;
+run(remember);
 
 for k=1:numel(T)
   ntrl(k) = numel(T{k});
 end
 
-q = 10;
+q = 1;
 while numel(downsample(F0(:,1),q)) ~= numel(freq.time)
   q=q+1;
 end
