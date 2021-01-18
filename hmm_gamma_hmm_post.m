@@ -27,7 +27,7 @@ else
 end
 
 % reshape Gamma into ntime*ntrl*nstates
-Gamma = reshape(Gamma,T{1}(1),[],4);
+Gamma = reshape(Gamma,T{1}(1)-options.order,[],options.K);
 
 % HMM based time-frequency representation
 tf = hmmtimefreq(spectra, Gamma_pad, 1);
