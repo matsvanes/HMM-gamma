@@ -24,12 +24,10 @@ remember = [osldir, '/osl-core/osl_startup'];
 osl_shutdown()
 pathinfo; addpath(fieldtrippath)
 ft_defaults
-ntrials = sum(numel(cat(1,T{:})));
-nsamples = size(Gamma,1)/ntrials;
-nstates = size(Gamma,2);
+nstates = size(Gamma,3);
 
 dat=[];
-dat.trial = permute(reshape(Gamma, [ntrials,nsamples,nstates]), [1,3,2]);
+dat.trial = Gamma;
 for k=1:nstates
   dat.label{k} = sprintf('chan%02d', k);
 end
