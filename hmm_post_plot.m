@@ -4,9 +4,10 @@ function hmm_post_plot(options, T, time, F0, MLGamma, spectra, tf_avgT_blC_avgS,
     figure;
     subplot(2,3,1)
     
-    time_short = time; time_short(1:options.order)=[];
-    plot(time_short, F0-mean(F0)); 
-    xlabel('time'), ylabel('occupancy (demeaned)'), title('Relative fractional occupancy')
+    timeidx = options.order+numel(options.embeddedlags);
+    time_short = time(timeidx:end); 
+    plot(time_short, F0); 
+    xlabel('time'), ylabel('occupancy'), title('Fractional occupancy')
     
     subplot(2,3,2)
     imagesc(time, 1:size(MLGamma,2), MLGamma')
@@ -17,13 +18,13 @@ function hmm_post_plot(options, T, time, F0, MLGamma, spectra, tf_avgT_blC_avgS,
     
     subplot(2,3,4)
     plot(spectra.state(1).f, cat(2,spectra.state(:).psd))
-    xlabel('Frequency (Hz)'), ylabel('Power'), title('State Spectra'), ylim([1 100])
+    xlabel('Frequency (Hz)'), ylabel('Power'), title('State Spectra')
     
     subplot(2,3,5)
     imagesc(time,f,tf_avgT_blC_avgS')
     set(gca,'YDir','normal'), xlabel('Time (s)'), ylabel('Frequency (Hz)'), title('State TF spectra'),  ylim([1 100])
     
-    subplot(2,3,5)
+    subplot(2,3,6)
     imagesc(tfconvol.time,tfconvol.freq,nanmean(cat(3,tfconvol.tf_norm{:}),3)')
     set(gca,'YDir','normal'), xlabel('Time (s)'), ylabel('Frequency (Hz)'), title('State TF mtmconvol'),  ylim([1 100])
     
