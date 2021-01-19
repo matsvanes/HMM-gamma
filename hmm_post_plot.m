@@ -11,7 +11,7 @@ function hmm_post_plot(options, T, time, F0, MLGamma, spectra, tf_avgT_blC_avgS,
     
     subplot(2,3,2)
     imagesc(time, 1:size(MLGamma,2), MLGamma')
-    set(gca,'YDir','normal'), xlabel('Time (s)'), ylabel('Trial #'), title('Trial time courses'), hold on
+    set(gca,'YDir','normal'), xlabel('Time (s)'), ylabel('Trial #'), title('Maximum Likelihood Gamma'), hold on
     for k=1:numel(T)
       hline(numel(cat(1,T{1:k})), 'r');
     end
@@ -28,6 +28,6 @@ function hmm_post_plot(options, T, time, F0, MLGamma, spectra, tf_avgT_blC_avgS,
     imagesc(tfconvol.time,tfconvol.freq,nanmean(cat(3,tfconvol.tf_norm{:}),3)')
     set(gca,'YDir','normal'), xlabel('Time (s)'), ylabel('Frequency (Hz)'), title('State TF mtmconvol'),  ylim([1 100])
     
-    suptitle(sprintf('HMM, order %d, %d states', options.order, options.K))
+    suptitle(sprintf('HMM, order %d, %d states, lags %s', options.order, options.K, num2str(options.embeddedlags)))
 
   end
