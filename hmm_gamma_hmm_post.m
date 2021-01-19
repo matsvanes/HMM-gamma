@@ -4,6 +4,7 @@ if ~exist('doplot', 'var'), doplot=1; end
 % Post process HMM
 if iscell(hmm),   hmm  = hmm{1};  end
 if iscell(time),  time = time{1}; end
+if ~isfield(options, 'embeddedlags') || isempty(options.embeddedlags), options.embeddedlags=0; end
 
 % Pad Gamma until original length
 Gamma_pad = padGamma(Gamma,T,options);
@@ -27,7 +28,7 @@ else
 end
 
 % reshape Gamma into ntime*ntrl*nstates
-Gamma = reshape(Gamma,T{1}(1)-options.order,[],options.K);
+Gamma = reshape(Gamma,T{1}(1)-options.order-numel(options.embeddedlags)+1,[],options.K);
 
 % HMM based time-frequency representation
 tf = hmmtimefreq(spectra, Gamma_pad, 1);
@@ -48,8 +49,10 @@ tf_avgTr = permute(cat(3, tf_avgTr{:}), [3 1 2]);
 tf_avgT_avgS = squeeze(nanmean(tf_avgTr,1));
 
 % Compute TF using mtmconvol
+timeidx = options.order+numel(options.embeddedlags);
+time_short = time(timeidx:end); 
 cfg.foi = 1:100;
-tfconvol = hmmtimefreqconvol(cfg, Gamma, T, time, dynamics.F0);
+tfconvol = hmmtimefreqconvol(cfg, Gamma, T, time_short, dynamics.F0);
 
 if doplot
   hmm_post_plot(options, T, time, dynamics.F0, MLGamma, spectra, tf_avgT_avgS, tfconvol);
