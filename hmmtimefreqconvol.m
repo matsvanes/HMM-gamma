@@ -1,4 +1,4 @@
-function tfconvol = hmmtimefreqconvol(cfg, Gamma,T, time, F0)
+function tfconvol = hmmtimefreqconvol(cfg, Gamma, T, time, F0)
 % obtains a time-frequency representation of state time courses, using
 % convolution (in contrast to hmmtimefreq, which uses the HMM spectra). 
 % The argument Gamma contains the state time courses. 
@@ -27,7 +27,7 @@ ft_defaults
 nstates = size(Gamma,3);
 
 dat=[];
-dat.trial = Gamma;
+dat.trial = permute(Gamma, [2,3,1]);
 for k=1:nstates
   dat.label{k} = sprintf('chan%02d', k);
 end
@@ -35,6 +35,7 @@ dat.time = time;
 
 freq = ft_freqanalysis(cfg, dat);
 restoredefaultpath;
+run(startupdir)
 run(remember);
 
 for k=1:numel(T)
