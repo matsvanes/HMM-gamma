@@ -256,7 +256,7 @@ if run.HMM.run
     % estimate gammas & sepctrum
     %       [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
     %       [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
-    filename = [PATH.HMM_PREC 'POST_HMM'];
+    filename = [PATH.HMM_PREC, prefix, '_POST_HMM'];
     if run.remove_parc,     filename = [filename, '_sel'];    end
     if isfield(run, 'orig') && run.orig==1,   filename = [fname, '_orig']; end
     
