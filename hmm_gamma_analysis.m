@@ -64,11 +64,12 @@ sensor = 0;
 if ~exist('timewin',  'var'), timewin  = [];       end
 
 % HMM
-if run.HMM.run==1 
+if run.HMM.run==1
   % general settings
-  if ~exist('N_states', 'var'),    N_states     = [3:1:10]; end
-  if ~exist('realization', 'var'), realization  = [1:10];   end
+  if ~exist('N_states', 'var'),    N_states      = [3:1:10]; end
+  if ~exist('realization', 'var'), realization   = [1:10];   end
   if ~exist('round_factor', 'var'), round_factor = 1000; end
+  if ~exist('rungroup', 'var'),     rungroup     = 1; end
   % model specific settings
   if strcmp(run.HMM.model, 'mar')
     PATH.HMM = [PATH.HMM 'MAR/'];
@@ -215,58 +216,65 @@ end
 
 %% RUN HMMs
 if run.HMM.run
-  for n=1:length(N_states)
-    %     for r=1:length(realization)
-    %       PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
-    PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/'];
-    mkdir(PATH.HMM_PREC);
-    disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
-    
-    fname = [PATH.HMM, prefix, '_PREP_HMM'];
-    if run.remove_parc,  fname = [fname, '_sel']; end
-    if isfield(run, 'orig') && run.orig==1,   fname = [fname, '_orig'];   end
-    load(fname)
-    
-    % define HMM params
-    options = [];
-    options.K = N_states(n);
-    options.Fs = D.fsample;
-    options.order = order;
-    options.repetitions = numel(realization);
-    options.useParallel = false;
-    if strcmp(run.HMM.model, 'tde')
-      options.covtype = covtype;
-      options.zeromean = zeromean;
-      options.embeddedlags = embeddedlags;
-      options.pca = pca;
-    end   
-    
-    % run HMM
-    clear hmm Gamma
-    [hmm,Gamma] = hmmmar(X,T,options);
-    
-    % get time vector
-    for s=1:length(T)
-      t{s}=D.time(1):1/D.fsample:D.time(end);
-      for o=1:ntrials{s}
-        t_Gamma{s}{o}=t{s}(hmm.train.order+1):1/D.fsample:t{s}(end);
+  if rungroup==1, runsubs = 1; else, runsubs = subs; end
+  for s=runsubs
+    for n=1:length(N_states)
+      %     for r=1:length(realization)
+      %       PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
+      PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/'];
+      mkdir(PATH.HMM_PREC);
+      disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
+      
+      fname = [PATH.HMM, prefix, '_PREP_HMM'];
+      if ~rungroup, fname = [fname '_', sub(s).id]; end
+      if run.remove_parc,  fname = [fname, '_sel']; end
+      if isfield(run, 'orig') && run.orig==1,   fname = [fname, '_orig'];   end
+      load(fname)
+      
+      if ~rungroup, X = X(s); T = T(s); ntrials = ntrials(s); t = t(s); end
+      
+      % define HMM params
+      options = [];
+      options.K = N_states(n);
+      options.Fs = D.fsample;
+      options.order = order;
+      options.repetitions = numel(realization);
+      options.useParallel = false;
+      if strcmp(run.HMM.model, 'tde')
+        options.covtype = covtype;
+        options.zeromean = zeromean;
+        options.embeddedlags = embeddedlags;
+        options.pca = pca;
       end
-    end
-    
-    % estimate gammas & sepctrum
-    %       [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
-    %       [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
-    filename = [PATH.HMM_PREC, prefix, '_POST_HMM'];
-    if run.remove_parc,     filename = [filename, '_sel'];    end
-    if isfield(run, 'orig') && run.orig==1,   filename = [fname, '_orig']; end
-    
-    save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
-    try
-      [Gamma, MLGamma, dynamics, spectra, tf, tfconvol] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
-      save(filename,'Gamma', 'MLGamma', 'dynamics', 'spectra', 'tf','tfconvol', '-append');
-    catch
-      warning('hmm_gamma_hmm_post failed')
-    end
-  end %states
+      
+      % run HMM
+      clear hmm Gamma
+      [hmm,Gamma] = hmmmar(X,T,options);
+      
+      % get time vector
+      for s=1:length(T)
+        t{s}=D.time(1):1/D.fsample:D.time(end);
+        for o=1:ntrials{s}
+          t_Gamma{s}{o}=t{s}(hmm.train.order+1):1/D.fsample:t{s}(end);
+        end
+      end
+      
+      % estimate gammas & sepctrum
+      %       [Gamma_mat_Gavg_inf,Gamma_mat_avg_inf,Gamma_mat_inf,Gamma_t] = hmm_get_gammas(X,T,t_Gamma,hmm,options,[],ntrials);
+      %       [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
+      filename = [PATH.HMM_PREC, prefix, '_POST_HMM'];
+      if ~rungroup, filename = [filename '_', sub(s).id]; end
+      if run.remove_parc,     filename = [filename, '_sel'];    end
+      if isfield(run, 'orig') && run.orig==1,   filename = [fname, '_orig']; end
+      
+      save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
+      try
+        [Gamma, MLGamma, dynamics, spectra, tf, tfconvol] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
+        save(filename,'Gamma', 'MLGamma', 'dynamics', 'spectra', 'tf','tfconvol', '-append');
+      catch
+        warning('hmm_gamma_hmm_post failed')
+      end
+    end %states
+  end
 end
 
