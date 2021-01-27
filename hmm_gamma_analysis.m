@@ -226,7 +226,6 @@ if run.HMM.run
       disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
       
       fname = [PATH.HMM, prefix, '_PREP_HMM'];
-      if ~rungroup, fname = [fname '_', sub(s).id]; end
       if run.remove_parc,  fname = [fname, '_sel']; end
       if isfield(run, 'orig') && run.orig==1,   fname = [fname, '_orig'];   end
       load(fname)
