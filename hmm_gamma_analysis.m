@@ -251,10 +251,10 @@ if todo.HMM.run
       [hmm,Gamma] = hmmmar(X,T,options);
       
       % get time vector
-      for s=1:length(T)
-        t{s}=D.time(1):1/D.fsample:D.time(end);
-        for o=1:ntrials{s}
-          t_Gamma{s}{o}=t{s}(hmm.train.order+1):1/D.fsample:t{s}(end);
+      for j=1:length(T)
+        t{j}=D.time(1):1/D.fsample:D.time(end);
+        for o=1:ntrials{j}
+          t_Gamma{j}{o}=t{j}(hmm.train.order+1):1/D.fsample:t{j}(end);
         end
       end
       
