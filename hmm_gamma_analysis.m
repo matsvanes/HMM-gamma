@@ -1,22 +1,22 @@
 %% JOBS
-if ~exist('run', 'var') || isempty(run)
-  run.preproc.bpfilt  = 0;
-  run.preproc.whiten  = 1;
-  run.remove_parc     = 0;
-  run.TF.run          = 0;
-  run.TF.eval         = 0;
-  run.HMM.prep        = 1;
-  run.HMM.run         = 1;
-  run.HMM.model       = 'tde'; % can be 'mar', 'tde'
-  if ~isfield(run.TF, 'ROI') || isempty(run.ROI)
-    run.ROI          = input('which ROIs do you want to analyze?{sensor, parc, M1'); % can be 'sensor', 'parc', 'M1'
+if ~exist('run', 'var') || isempty(todo)
+  todo.preproc.bpfilt  = 0;
+  todo.preproc.whiten  = 1;
+  todo.remove_parc     = 0;
+  todo.TF.run          = 0;
+  todo.TF.eval         = 0;
+  todo.HMM.prep        = 1;
+  todo.HMM.run         = 1;
+  todo.HMM.model       = 'tde'; % can be 'mar', 'tde'
+  if ~isfield(todo.TF, 'ROI') || isempty(todo.ROI)
+    todo.ROI          = input('which ROIs do you want to analyze?{sensor, parc, M1'); % can be 'sensor', 'parc', 'M1'
   end
-  run.TF
-  run.HMM
+  todo.TF
+  todo.HMM
   disp(['%%% Check if correct jobs are defined! %%%']);keyboard
 else
-  run.TF
-  run.HMM
+  todo.TF
+  todo.HMM
   disp(['%%% The following jobs are defined! %%%']);
 end
 
@@ -46,8 +46,8 @@ if ~exist('userdir', 'var') || isempty(userdir), userdir = []; else, if ~strcmp(
 files=dir([PATH.DATA 'efd_*.mat']);
 subinfo;
 prefix = 'fd';
-if run.preproc.bpfilt,  prefix = ['f', prefix]; end
-if run.preproc.whiten,  prefix = ['w', prefix]; end
+if todo.preproc.bpfilt,  prefix = ['f', prefix]; end
+if todo.preproc.whiten,  prefix = ['w', prefix]; end
 prefix = ['e', prefix];
 p = parcellation('dk_full');
 %% PARAMS
@@ -64,17 +64,17 @@ sensor = 0;
 if ~exist('timewin',  'var'), timewin  = [];       end
 
 % HMM
-if run.HMM.run==1
+if todo.HMM.run==1
   % general settings
   if ~exist('N_states', 'var'),    N_states      = [3:1:10]; end
   if ~exist('realization', 'var'), realization   = [1:10];   end
   if ~exist('round_factor', 'var'), round_factor = 1000; end
   if ~exist('rungroup', 'var'),     rungroup     = 1; end
   % model specific settings
-  if strcmp(run.HMM.model, 'mar')
+  if strcmp(todo.HMM.model, 'mar')
     PATH.HMM = [PATH.HMM 'MAR/'];
     if ~exist('order', 'var'),        order        = 5;    end
-  elseif strcmp(run.HMM.model, 'tde')
+  elseif strcmp(todo.HMM.model, 'tde')
     PATH.HMM = [PATH.HMM 'TDE/'];
     order = 0;
     covtype = 'full';
@@ -87,13 +87,13 @@ end
 if ~exist('subs', 'var'), subs = 1:length(sub); end
 
 %% RUN TF
-if run.TF.run
+if todo.TF.run
   
   
-  for rois = 1:numel(run.ROI)
+  for rois = 1:numel(todo.ROI)
     
-    PATH.TARGET = [PATH.TF, run.ROI{rois}, '/', userdir];
-    if strcmp(run.ROI{rois}, 'M1') && run.remove_parc
+    PATH.TARGET = [PATH.TF, todo.ROI{rois}, '/', userdir];
+    if strcmp(todo.ROI{rois}, 'M1') && todo.remove_parc
       PATH.DIPOLE   = [PATH.TARGET, 'peaks_60_90Hz/'];
       dipole_group = load([PATH.TARGET, prefix, '_dip_index_sorted.mat']);
     else
@@ -102,10 +102,10 @@ if run.TF.run
     for s = subs
       s
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
-      if strcmp(run.ROI{rois}, 'M1') && run.remove_parc
+      if strcmp(todo.ROI{rois}, 'M1') && todo.remove_parc
         dipole_subject = load([PATH.DIPOLE, sprintf('%s_case_%s', prefix, sub(s).id), '.mat']);
       end
-      D = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_group);
+      D = hmm_gamma_preparedata(PATH, files.name, todo.ROI{rois}, todo.remove_parc, p, dipole_group);
       
       % TF
       S = [];
@@ -129,7 +129,7 @@ if run.TF.run
       if ~keep, delete(S.D);  end
       
       % Average
-      if ~strcmp(run.ROI{rois}, 'M1')
+      if ~strcmp(todo.ROI{rois}, 'M1')
         S = [];
         S.D = D;
         S.robust.ks = 5;
@@ -153,32 +153,32 @@ if run.TF.run
 end
 
 %% EVAL TF
-if  run.TF.eval
+if  todo.TF.eval
   plot_M1_TF
 end
 
 %% PREP HMM
-if run.HMM.prep
+if todo.HMM.prep
   
-  for rois = 1:numel(run.ROI)
-    PATH.TARGET = [PATH.HMM, run.ROI{rois}, '/', userdir];
-    dipole_group = load([PATH.TF, run.ROI{rois}, '/', 'effd_dip_index_sorted.mat']);
+  for rois = 1:numel(todo.ROI)
+    PATH.TARGET = [PATH.HMM, todo.ROI{rois}, '/', userdir];
+    dipole_group = load([PATH.TF, todo.ROI{rois}, '/', 'effd_dip_index_sorted.mat']);
     for s = subs
       s
       files=dir([PATH.DATA sprintf('%s_*%s*.mat', prefix, sub(s).id)]);
-      [D, dat] = hmm_gamma_preparedata(PATH, files.name, run.ROI{rois}, run.remove_parc, p, dipole_group, timewin);
+      [D, dat] = hmm_gamma_preparedata(PATH, files.name, todo.ROI{rois}, todo.remove_parc, p, dipole_group, timewin);
       
       % select parcel/voxel of interest.
-      if strcmp(run.ROI{rois}, 'parc')
-        if run.remove_parc, POI = 14; else, POI = 23; end
-      elseif strcmp(run.ROI{rois},'M1')
-        if isfield(run, 'orig') && run.orig==1
-          dipole_subject = load([PATH.TF, run.ROI{rois}, '/','peaks_60_90Hz_orig/', sprintf('case_%s.mat', sub(s).id)]);
+      if strcmp(todo.ROI{rois}, 'parc')
+        if todo.remove_parc, POI = 14; else, POI = 23; end
+      elseif strcmp(todo.ROI{rois},'M1')
+        if isfield(todo, 'orig') && todo.orig==1
+          dipole_subject = load([PATH.TF, todo.ROI{rois}, '/','peaks_60_90Hz_orig/', sprintf('case_%s.mat', sub(s).id)]);
         else
-          if run.remove_parc
-            dipole_subject = load([PATH.TF, run.ROI{rois}, '/','peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
+          if todo.remove_parc
+            dipole_subject = load([PATH.TF, todo.ROI{rois}, '/','peaks_60_90Hz/', sprintf('effd_case_%s_sel.mat', sub(s).id)]);
           else
-            dipole_subject = load([PATH.TF, run.ROI{rois}, '/','peaks_60_90Hz/', sprintf('effd_case_%s.mat', sub(s).id)]);
+            dipole_subject = load([PATH.TF, todo.ROI{rois}, '/','peaks_60_90Hz/', sprintf('effd_case_%s.mat', sub(s).id)]);
           end
         end
         POI = dipole_subject.voxel;
@@ -197,8 +197,8 @@ if run.HMM.prep
       T{s} = repmat(nsamples{s},1,ntrials{s})';
     end %subj
     fname = [prefix '_PREP_HMM'];
-    if run.remove_parc,   fname = [fname, '_sel'];    end
-    if isfield(run, 'orig') && run.orig==1,    fname = [fname ,'_orig'];    end
+    if todo.remove_parc,   fname = [fname, '_sel'];    end
+    if isfield(todo, 'orig') && todo.orig==1,    fname = [fname ,'_orig'];    end
     save([PATH.HMM fname],'X','T','ntrials','t','round_factor','order','D');
     
     % MAR check
@@ -215,7 +215,7 @@ if run.HMM.prep
 end
 
 %% RUN HMMs
-if run.HMM.run
+if todo.HMM.run
   if rungroup==1, runsubs = 1; else, runsubs = subs; end
   for s=runsubs
     for n=1:length(N_states)
@@ -226,8 +226,8 @@ if run.HMM.run
       disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
       
       fname = [PATH.HMM, prefix, '_PREP_HMM'];
-      if run.remove_parc,  fname = [fname, '_sel']; end
-      if isfield(run, 'orig') && run.orig==1,   fname = [fname, '_orig'];   end
+      if todo.remove_parc,  fname = [fname, '_sel']; end
+      if isfield(todo, 'orig') && todo.orig==1,   fname = [fname, '_orig'];   end
       load(fname)
       
       if ~rungroup, X = X(s); T = T(s); ntrials = ntrials(s); t = t(s); end
@@ -239,7 +239,7 @@ if run.HMM.run
       options.order = order;
       options.repetitions = numel(realization);
       options.useParallel = false;
-      if strcmp(run.HMM.model, 'tde')
+      if strcmp(todo.HMM.model, 'tde')
         options.covtype = covtype;
         options.zeromean = zeromean;
         options.embeddedlags = embeddedlags;
@@ -263,8 +263,8 @@ if run.HMM.run
       %       [spectra_t,options_mar,options_mt] = hmm_get_spectra(X,T,D.fsample,Gamma_t,hmm,1,options,256);
       filename = [PATH.HMM_PREC, prefix, '_POST_HMM'];
       if ~rungroup, filename = [filename '_', sub(s).id]; end
-      if run.remove_parc,     filename = [filename, '_sel'];    end
-      if isfield(run, 'orig') && run.orig==1,   filename = [fname, '_orig']; end
+      if todo.remove_parc,     filename = [filename, '_sel'];    end
+      if isfield(todo, 'orig') && todo.orig==1,   filename = [fname, '_orig']; end
       
       save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
       try
