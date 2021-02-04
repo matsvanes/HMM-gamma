@@ -7,5 +7,6 @@ if islocal
 else
   projectdir = '/ohba/pi/mwoolrich/mvanes/';
   homedir = '/home/mvanes/';
+  startupdir = homedir;
 end
   fieldtrippath = [homedir, 'software/fieldtrip/'];
