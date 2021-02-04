@@ -1,5 +1,5 @@
 %% JOBS
-if ~exist('run', 'var') || isempty(todo)
+if ~exist('todo', 'var') || isempty(todo)
   todo.preproc.bpfilt  = 0;
   todo.preproc.whiten  = 1;
   todo.remove_parc     = 0;
