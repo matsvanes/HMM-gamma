@@ -36,7 +36,6 @@ dat.time = time;
 freq = ft_freqanalysis(cfg, dat);
 restoredefaultpath;
 run(startupdir)
-run(remember);
 
 for k=1:numel(T)
   ntrl(k) = numel(T{k});
