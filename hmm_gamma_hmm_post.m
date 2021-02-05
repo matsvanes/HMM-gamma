@@ -1,5 +1,6 @@
-function [Gamma, MLGamma, dynamics, spectra, tf, tfconvol] = hmm_gamma_hmm_post(X, Gamma, hmm, T, time, options, doplot, filename)
+function [Gamma, MLGamma, dynamics, spectra, tf, tfconvol, tf_avgT_avgS] = hmm_gamma_hmm_post(X, Gamma, hmm, T, time, options, doplot, filename)
 if ~exist('doplot', 'var'), doplot=1; end
+if contains(filename, '.mat'), filename = extractBefore(filename, '/mat'); end
 
 % Post process HMM
 if iscell(hmm),   hmm  = hmm{1};  end
@@ -7,6 +8,9 @@ if iscell(time),  time = time{1}; end
 if ~isfield(options, 'embeddedlags') || isempty(options.embeddedlags), options.embeddedlags=0; end
 
 % Pad Gamma until original length
+if ndims(Gamma)>2
+  Gamma = reshape(Gamma, [], options.K);
+end
 Gamma_pad = padGamma(Gamma,T,options);
 
 % Measures of state dynamics
