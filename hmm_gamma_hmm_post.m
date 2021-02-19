@@ -56,7 +56,7 @@ tf_avgT_avgS = squeeze(nanmean(tf_avgTr,1));
 timeidx = options.order+numel(options.embeddedlags);
 time_short = time(timeidx:end); 
 cfg.foi = 1:100;
-tfconvol = hmmtimefreqconvol(cfg, Gamma, T, time_short, dynamics.F0);
+tfconvol = hmmtimefreqconvol(cfg, Gamma, T, time_short, dynamics.F0, 1);
 
 if doplot
   hmm_post_plot(options, T, time, dynamics.F0, MLGamma, spectra, tf_avgT_avgS, tfconvol);

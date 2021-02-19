@@ -25,7 +25,7 @@ function hmm_post_plot(options, T, time, F0, MLGamma, spectra, tf_avgT_blC_avgS,
     set(gca,'YDir','normal'), xlabel('Time (s)'), ylabel('Frequency (Hz)'), title('State TF spectra'),  ylim([1 100])
     
     subplot(2,3,6)
-    imagesc(tfconvol.time,tfconvol.freq,nanmean(cat(3,tfconvol.tf_norm{:}),3)')
+    imagesc(tfconvol.time,tfconvol.freq,nanmean(cat(3,tfconvol.tf{:}),3)')
     set(gca,'YDir','normal'), xlabel('Time (s)'), ylabel('Frequency (Hz)'), title('State TF mtmconvol'),  ylim([1 100])
     
     suptitle(sprintf('HMM, order %d, %d states, lags %s', options.order, options.K, num2str(options.embeddedlags)))

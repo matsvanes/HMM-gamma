@@ -1,14 +1,16 @@
-function tfconvol = hmmtimefreqconvol(cfg, Gamma, T, time, F0)
+function tfconvol = hmmtimefreqconvol(cfg, Gamma, T, time, F0, center)
 % obtains a time-frequency representation of state time courses, using
 % convolution (in contrast to hmmtimefreq, which uses the HMM spectra). 
 % The argument Gamma contains the state time courses. 
 %
 % The output arguments are
 %  psd_tf: (time points by no. of frequency bins by no.regions) 
-%
+% 
+% NOTE: does not yet work with multiple channels
+% 
 % Author: Mats van Es, OHBA, University of Oxford (2021)
 
-
+if nargin<6, center = 0; end
 if ~isfield(cfg, 'baseline'), cfg.baseline = [-.6 -.2]; end
 if ~isfield(cfg, 'foi'), cfg.foi    = 60:90;     end 
 if ~isfield(cfg, 'tapsmofrq'), cfg.tapsmofrq = 5;         end 
@@ -50,14 +52,15 @@ F0ds = downsample(F0,q);
 idx(1) = nearest(dat.time, cfg.baseline(1));
 idx(2) = nearest(dat.time, cfg.baseline(2));
 for k=1:numel(ntrl)
-  psd_tf{k} = permute(squeeze(nanmean(freq.powspctrm(sum(ntrl(1:k))-ntrl(k)+1:sum(ntrl(1:k)),:,:,:))), [3,2,1]);
-  [s1,s2,~] = size(psd_tf{k});
-%   psd_tf{k} = psd_tf{k}-repmat(nanmean(psd_tf{k},1),[s1,1,1]);
-  psd_tf_norm{k} = mean(psd_tf{k}.*permute(repmat(F0ds, [1,1,s2]), [1,3,2]),3);
+  psd_tf{k} = sum(permute(squeeze(nanmean(freq.powspctrm(sum(ntrl(1:k))-ntrl(k)+1:sum(ntrl(1:k)),:,:,:))), [3,2,1]),3);
+  if center
+    for j=1:size(psd_tf{k},2)
+      psd_tf{k}(:,j) = psd_tf{k}(:,j)-nanmean(psd_tf{k}(:,j));
+    end
+  end
 end
 
 tfconvol = [];
 tfconvol.tf = psd_tf;
-tfconvol.tf_norm = psd_tf_norm;
 tfconvol.time = freq.time;
 tfconvol.freq = freq.freq;
