@@ -221,7 +221,11 @@ if todo.HMM.run
     for n=1:length(N_states)
       %     for r=1:length(realization)
       %       PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/real_' num2str(realization(r)) '/'];
-      PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/'];
+      if strcmp(todo.HMM.model, 'mar')
+        PATH.HMM_PREC = [PATH.HMM 'order_' num2str(order) '/' num2str(N_states(n)) '_states/'];
+      elseif strcmp(todo.HMM.model, 'tde')
+        PATH.HMM_PREC = [PATH.HMM num2str(N_states(n)) '_states/'  'lag_' num2str(embeddedlags(end)) '/' ];
+      end
       mkdir(PATH.HMM_PREC);
       disp(['%%% run HMM: order ',num2str(order),', ',num2str(N_states(n)),' states', ' %%%']);
       
