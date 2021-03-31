@@ -5,8 +5,8 @@ subinfo
 % general parameters
 blwindow = [-.6 -.2];
 tsel=[-0.5 0.5];
-prefix = 'ewfd'; % 'effd';
-
+prefix = 'efd'; % 'effd';
+cmap = inferno(64);
 %% sensor
 fname = sprintf('/Volumes/T5_OHBA/analysis/HMM-gamma/TF/sensor/%s_TF_sensor_groupAvg.mat', prefix);
 load(fname)
@@ -22,19 +22,20 @@ tf_short = squeeze(mean(tf(:,idx,:,t1:t2),2));
 % subjects
 for s=1:numel(sub)
   figure(s)
-  subplot(1,3,1)
-  plot_TF(t_short, freq, squeeze(tf_short(s,:,:)), 'Fourier sensor')
+  subplot(1,3,1)%subplot(2,2,1)
+  plot_TF(t_short, freq, squeeze(tf_short(s,:,:)), 'Fourier sensor', [], cmap)
 end
 
 % Group
 figure(34);
-subplot(1,3,1)
-plot_TF(t_short, freq, squeeze(mean(tf_short,1)),'Fourier sensor')
-
+subplot(1,3,1)%subplot(2,2,1)
+plot_TF(t_short, freq, squeeze(mean(tf_short,1)),'Fourier sensor', [], cmap)
 
 %% M1
-d = '/Volumes/T5_OHBA/analysis/HMM-gamma/TF/M1/optimised/peaks_60_90Hz/';
+d = '/Volumes/T5_OHBA/analysis/HMM-gamma/TF/M1/peaks_60_90Hz/';
 tfm1 = zeros(33,31,21);
+t_short = -.5:0.05:.5;
+freq=60:90;
 for s=1:numel(sub)
   tmp = load([d, sprintf('%s_case_%s.mat', prefix, sub(s).id)]);
   tfm1(s,:,:) = tmp.tf_2d(:,t1:t2);
@@ -43,45 +44,43 @@ end
 % subjects
 for s=1:numel(sub)
   figure(s)
-  subplot(1,3,2)
-  plot_TF(t_short, freq, squeeze(tfm1(s,:,:)), 'Fourier M1 dipole')
+  subplot(1,3,2)%subplot(2,2,2)
+  plot_TF(t_short, freq, squeeze(tfm1(s,:,:)), 'Fourier M1 dipole', [], cmap)
 end
 
 % Group
 figure(34);
-subplot(1,3,2)
-plot_TF(t_short, freq, squeeze(mean(tfm1,1)),'Fourier M1 dipole')
+subplot(1,3,2)% subplot(2,2,2)
+plot_TF(t_short, freq, squeeze(mean(tfm1,1)),'Fourier M1 dipole', [], cmap)
 
 
 %% HMM
-d = load('/Volumes/T5_OHBA/analysis/HMM-gamma/HMM/order_5/2_states/POST_HMM.mat', 't', 'tf', 'spectra');
-f=d.spectra.state(1).f;
+d = load(sprintf('/Volumes/T5_OHBA/analysis/HMM-gamma/HMM/TDE/4_states/lag_3/%s_POST_HMM.mat', prefix), 't', 'tf','tfmt','tfmt_avg', 'spectramt');
+
+f=d.spectramt.state(1).f;
+t=d.t{1};
+tf=d.tfmt;
+
 f1=nearest(f,60);
 f2=nearest(f,90);
-t=d.t{1};
+
 t1 = nearest(t, tsel(1));
 t2 = nearest(t, tsel(2));
 
-blsel = [nearest(t, blwindow(1)), nearest(t, blwindow(2))];
+tfhmm = permute(cat(3,tf{:}),[3 2 1]);
 
-path_timing = '/Volumes/T5_OHBA/analysis/HMM-gamma/timing/';
-
-tfhmm = zeros(33,32,501);
-for s=1:numel(sub)
-  tfhmm(s,:,:) = nanmean(d.tf{s}(t1:t2,f1:f2,:),3)';
-end
 
 % subjects
 for s=1:numel(sub)
   figure(s)
-  subplot(1,3,3)
-  plot_TF(t(t1:t2), f(f1:f2), squeeze(tfhmm(s,:,:)), 'HMM M1 dipole')
+  subplot(1,3,3)%   subplot(2,2,3+k-1)
+  plot_TF(t(t1:t2), f(f1:f2), squeeze(tfhmm(s,f1:f2,:)), 'HMM M1 dipole', [], cmap)
 end
 
 % Group
 figure(34);
-subplot(1,3,3)
-plot_TF(t(t1:t2), f(f1:f2), squeeze(mean(tfhmm,1)),'HMM M1 dipole')
+subplot(1,3,3) %subplot(2,2,3+k-1)
+plot_TF(t(t1:t2), f(f1:f2), squeeze(mean(tfhmm(:,f1:f2,:),1)),'HMM M1 dipole', [], cmap)
 
 
 %% Save
