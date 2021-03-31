@@ -9,7 +9,7 @@ if ~exist('todo', 'var') || isempty(todo)
   todo.HMM.run         = 1;
   todo.HMM.model       = 'tde'; % can be 'mar', 'tde'
   if ~isfield(todo.TF, 'ROI') || isempty(todo.ROI)
-    todo.ROI          = input('which ROIs do you want to analyze?{sensor, parc, M1'); % can be 'sensor', 'parc', 'M1'
+    todo.ROI          = {'M1'};%input('which ROIs do you want to analyze?{sensor, parc, M1'); % can be 'sensor', 'parc', 'M1'
   end
   todo.TF
   todo.HMM
@@ -184,7 +184,7 @@ if todo.HMM.prep
         POI = dipole_subject.voxel;
       end
       
-      PAC{s} = squeeze(dat(POI,:,:));
+      PAC{s} = normalize(squeeze(dat(POI,:,:)),1);
       t{s} = D.time(1):1/D.fsample:D.time(end);
       t{s} = round(t{s}*round_factor)/round_factor; % ensure that it's rounded properly for 'find' function
       
@@ -272,8 +272,8 @@ if todo.HMM.run
       
       save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
       try
-        [Gamma, MLGamma, dynamics, spectra, tf, tfconvol, tf_avg] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
-        save(filename,'Gamma', 'MLGamma', 'dynamics', 'spectra', 'tf','tfconvol', 'tf_avg', '-append');
+        [Gamma, MLGamma, dynamics, spectra, spectramt, tf, tfmt, tf_avg, tfmt_avg] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
+        save(filename,'Gamma', 'MLGamma', 'dynamics', 'spectra', 'spectramt', 'tf','tfmt', 'tf_avg','tfmt_avg', '-append');
       catch
         warning('hmm_gamma_hmm_post failed')
       end
