@@ -1,5 +1,5 @@
 PATH_BASE = '/Volumes/T5_OHBA/analysis/HMM-gamma/';
-PATH  = [PATH_BASE 'TF/M1/optimised/'];
+PATH  = [PATH_BASE 'TF/M1/'];
 PATH_TIMING = [PATH_BASE, 'timing/'];
 
 if ~exist('remove_parc', 'var'), remove_parc = 0;                            end
