@@ -272,8 +272,8 @@ if todo.HMM.run
       
       save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
       try
-        [Gamma, MLGamma, dynamics, spectra, spectramt, tf, tfmt, tf_avg, tfmt_avg] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
-        save(filename,'Gamma', 'MLGamma', 'dynamics', 'spectra', 'spectramt', 'tf','tfmt', 'tf_avg','tfmt_avg', '-append');
+        [Gamma, MLGamma, dynamics, spectramt, tfmt, tfmt_avg] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
+        save(filename,'Gamma', 'MLGamma', 'dynamics', 'spectramt', 'tfmt', 'tfmt_avg', '-append');
       catch
         warning('hmm_gamma_hmm_post failed')
       end

@@ -1,4 +1,4 @@
-function [Gamma, MLGamma, dynamics, spectra, spectramt, tf, tfmt, tf_avg, tfmt_avg] = hmm_gamma_hmm_post(X, Gamma, hmm, T, time, options, doplot, filename)
+function [Gamma, MLGamma, dynamics, spectramt, tfmt, tfmt_avg] = hmm_gamma_hmm_post(X, Gamma, hmm, T, time, options, doplot, filename)
 if ~exist('doplot', 'var'), doplot=1; end
 if contains(filename, '.mat'), filename = extractBefore(filename, '/mat'); end
 
@@ -24,13 +24,7 @@ dynamics.SwitchingRate =  getSwitchingRate(Gamma,T,hmm.train); % rate of switchi
 MLGamma = gammaRasterPlot(Gamma_pad, cat(1,T{:}));
 MLGamma = reshape(MLGamma,T{1}(1),[]);
 
-try
 % State spectra
-if options.order>0
-  spectra = hmmspectramar(cat(1,X{:}), cat(1,T{:}), hmm, Gamma, options);
-else
-  spectra = hmmspectratde(hmm, options);
-end
 spectramt = hmmspectramt(cat(1,X{:}), cat(1,T{:}), Gamma, options);
 
 % reshape Gamma into ntime*ntrl*nstates
@@ -41,20 +35,14 @@ Gamma = reshape(Gamma,T{1}(1)-options.order-numel(options.embeddedlags)+1,[],opt
 tfmt = hmmtimefreq(spectramt, Gamma_pad, 0); % based on multitapers
 
 % psd per subject
-[tf, tf_avg] = tftosub(tf, T, false);
 [tfmt, tfmt_avg] = tftosub(tfmt, T, false);
 
 
 if doplot
-  hmm_post_plot(options, T, time, dynamics.F0, MLGamma, spectra, spectramt, tf_avg, tfmt_avg);
+  hmm_post_plot(options, T, time, dynamics.F0, MLGamma, spectramt, tfmt_avg);
   if ~exist('filename', 'var') || isempty(filename)
     filename = 'HMM';
   end
   print('-dpng',filename);pause(1);
-end
-
-catch
-  Gamma = reshape(Gamma,T{1}(1)-options.order-numel(options.embeddedlags)+1,[],options.K);
-  spectra=[]; spectramt=[]; tf=[]; tfmt=[]; tf_avg=[]; tfmt_avg=[];
 end
 end
