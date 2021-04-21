@@ -271,9 +271,17 @@ if todo.HMM.run
       if isfield(todo, 'orig') && todo.orig==1,   filename = [fname, '_orig']; end
       
       save(filename,'hmm','X','T','ntrials','t','round_factor','order','D','t_Gamma','Gamma','options', '-v7.3');
+      % use the following TF options
+      options.win = timres;
+      options.smo = freqres;
+      options.tapers = [1 1];
+      options.fpass = 1:120;
+      options.blwindow = [-.6 -.2];
+      options.keeptrials = false;
+      options.freqmethod = 'ft_mt';
       try
-        [Gamma, MLGamma, dynamics, spectramt, tfmt, tfmt_avg] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
-        save(filename,'Gamma', 'MLGamma', 'dynamics', 'spectramt', 'tfmt', 'tfmt_avg', '-append');
+        [Gamma, MLGamma, dynamics, spectramt, tfmt, tfmt_avg, time_tf] = hmm_gamma_hmm_post(X, Gamma, hmm, T, t, options, 1, filename);
+        save(filename,'Gamma', 'MLGamma', 'dynamics', 'spectramt', 'tfmt', 'tfmt_avg','time_tf', '-append');
       catch
         warning('hmm_gamma_hmm_post failed')
       end
